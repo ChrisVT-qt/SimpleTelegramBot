@@ -1,5 +1,5 @@
 # SimpleTelegramBot
-Simple Telgram Bot in C++ that relies on Qt only and no other libraries.
+Simple Telegram bot in C++ that relies on Qt only and no other libraries.
 
 General goal
 - I wanted to write a Telegram Bot from scratch and understand how 
@@ -9,7 +9,7 @@ efficiency and did not use any Telegram communications libraries. I like a
 low dependecy level of my code to other code anyway.
 
 Current status
-- Bot seems to work on macOS and Qt 6.9.0. 
+- Bot seems to work on macOS 15.3 Sequoia and Qt 6.9.0. 
 - Not tested on other platforms, but given it only uses Qt, I see no reason why 
 it would not.
 - Bot can receive and send messages, download and upload files, and receive
