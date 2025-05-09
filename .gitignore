@@ -6,3 +6,6 @@ SimpleTelegramBot.app/Contents/MacOS/SimpleTelegramBot
 SimpleTelegramBot.app/Contents/PkgInfo
 src/Config.h
 /build
+/backup
+make_backup
+Tasks.txt
