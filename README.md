@@ -35,8 +35,11 @@ heavy-weight implementation of the full Telegram API.
 
 # Getting things started...
 In order to get started, you will need to put a few things into the 
-configuration file config.h
-- Set your bot name in BOT_NAME and its token in BOT_TOKEN.
-- Set a directory where stuff gets stored (BOT_ROOT)
-- Pick a database name where all messages are stored (BOT_DATABASE_FILE)
-- You can adjust the remaining setting as you want.
+configuration file `config.h` 
+1. Make a copy of `config_empty.h` and name it `config.h`.
+2. Set your bot name in `BOT_NAME` and its token in `BOT_TOKEN`.
+3. Set a directory where stuff gets stored (`BOT_ROOT`)
+4. Pick a database name where all messages are stored (`BOT_DATABASE_FILE`)
+5. You can adjust the remaining setting as you want.
+6. `qmake`
+7. `make`

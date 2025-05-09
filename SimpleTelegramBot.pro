@@ -3,8 +3,8 @@ INCLUDEPATH += src/
 INCLUDEPATH += shared/
 
 # Where files go
-OBJECTS_DIR=../build/
-MOC_DIR=../build/
+OBJECTS_DIR = build/
+MOC_DIR = build/
 
 # Frameworks and compiler
 TEMPLATE = app
@@ -19,7 +19,7 @@ CONFIG += silent
 
 # macOS stuff
 # Build for macOS 14
-#QMAKE_MACOSX_DEPLOYMENT_TARGET = 14.0
+# QMAKE_MACOSX_DEPLOYMENT_TARGET = 14.0
 # Build for either Intel and Apple Silicon
 # QMAKE_APPLE_DEVICE_ARCHS = arm64
 # CMAKE_OSX_ARCHITECTURES = arm64
