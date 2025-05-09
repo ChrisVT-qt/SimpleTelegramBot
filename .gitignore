@@ -4,3 +4,4 @@ Makefile
 SimpleTelegramBot.app/Contents/Info.plist
 SimpleTelegramBot.app/Contents/MacOS/SimpleTelegramBot
 SimpleTelegramBot.app/Contents/PkgInfo
+src/Config.h
