@@ -1,1 +1,6 @@
 .DS_Store
+Makefile
+.qmake.stash
+SimpleTelegramBot.app/Contents/Info.plist
+SimpleTelegramBot.app/Contents/MacOS/SimpleTelegramBot
+SimpleTelegramBot.app/Contents/PkgInfo
