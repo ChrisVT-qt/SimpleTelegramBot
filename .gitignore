@@ -9,3 +9,4 @@ src/Config.h
 /backup
 make_backup
 Tasks.txt
+*.user
