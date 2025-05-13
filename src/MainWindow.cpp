@@ -647,9 +647,11 @@ void MainWindow::Command_Help(const qint64 mcUserID, const qint64 mcChatID,
             "(1) To download an overview of all available sticker sets.\n"
             "(2) To download an overview of a particular sticker set.\n"
             "Parameters:\n"
-            "(1) [width]x[height], the resolution of the target image.\n"
-            "Default is 1920x1080.\n"
-            "(2) [set_name], the sticker set name.\n"
+            "(1) all [columns]x[rows] to generate contact sheets for all "
+            "sticker sets. Specify both if you want any other grid that 8x4.\n"
+            "(2) [set_name] [columns]x[rows], to generate contact sheets "
+            "for all sticker in the given sticker set. Specify columns and "
+            "rows if you want any other grid than 8x4.\n"
             "Result:\n"
             "- One or several images for download.");
     } else if (mcrParameters == "start")
@@ -940,49 +942,45 @@ void MainWindow::Command_ContactSheets(const qint64 mcUserID,
     // Abbreviation
     TelegramComms * tc = TelegramComms::Instance();
 
-    // We'll need this
-    static const QRegularExpression format_resolution("^([0-9]+)x([0-9]+)$");
-    static const QRegularExpression format_stickerset("^([a-zA-Z0-9_]+)$");
-
-    // Determine target resolution
-    while (true)
+    // Parse parameters
+    static const QRegularExpression format_parameters(
+        "^([a-zA-Z0-9+]+)( ([0-9]+)x([0-9]+))?$");
+    const QRegularExpressionMatch match_parameters =
+        format_parameters.match(mcrParameters);
+    if (!match_parameters.hasMatch())
     {
-        // == All sets, default resolution
-        if (mcrParameters.isEmpty())
-        {
-            const int sheet_width = 1920;
-            const int sheet_height = 1080;
-            Command_ContactSheets_AllSets(mcChatID, sheet_width, sheet_height);
-            break;
-        }
-
-        // == All sets, custom resolution
-        const QRegularExpressionMatch match_resolution =
-            format_resolution.match(mcrParameters);
-        if (match_resolution.hasMatch())
-        {
-            const int sheet_width = match_resolution.captured(1).toInt();
-            const int sheet_height = match_resolution.captured(2).toInt();
-            Command_ContactSheets_AllSets(mcChatID, sheet_width, sheet_height);
-            break;
-        }
-
-        // == Single set
-        const QRegularExpressionMatch match_stickerset =
-            format_stickerset.match(mcrParameters);
-        if (match_stickerset.hasMatch())
-        {
-            const QString set_name = match_stickerset.captured(1);
-            Command_ContactSheets_SingleSet(mcChatID, set_name);
-            break;
-        }
-
-        // == Error
-        const QString message = tr("Parameter \"%1\" is neither a resolution "
-            "not a sticker set name")
+        // Error
+        const QString message = tr("Parameters \"%1\" should specify a "
+            "sticker set name or \"all\", and (optionally) a grid size.")
             .arg(mcrParameters);
         tc -> SendMessage(mcChatID, message);
-        break;
+        CALL_OUT("");
+        return;
+    }
+    const QString set_name = match_parameters.captured(1);
+    int columns = match_parameters.captured(3).toInt();
+    int rows = match_parameters.captured(4).toInt();
+    if (columns == 0 ||
+        rows == 0)
+    {
+        columns = 8;
+        rows = 4;
+    }
+    if (columns < 4 ||
+        rows < 2)
+    {
+        columns = 4;
+        rows = 2;
+    }
+
+    if (set_name == "all")
+    {
+        // All sets overview
+        Command_ContactSheets_AllSets(mcChatID, rows, columns);
+    } else
+    {
+        // Single set
+        Command_ContactSheets_SingleSet(mcChatID, set_name, rows, columns);
     }
 
     CALL_OUT("");
@@ -994,12 +992,12 @@ void MainWindow::Command_ContactSheets(const qint64 mcUserID,
 ///////////////////////////////////////////////////////////////////////////////
 // Contact sheet: all sets
 void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
-    const int mcWidth, const int mcHeight)
+    const int mcRows, const int mcColumns)
 {
-    CALL_IN(QString("mcChatID=%1, mcWidth=%2, mcHeight=%3")
+    CALL_IN(QString("mcChatID=%1, mcRows=%2, mcColumns=%3")
         .arg(CALL_SHOW(mcChatID),
-             CALL_SHOW(mcWidth),
-             CALL_SHOW(mcHeight)));
+             CALL_SHOW(mcRows),
+             CALL_SHOW(mcColumns)));
 
     // Dimensions
     const int dim_sticker = 200;
@@ -1011,34 +1009,20 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
     const int dim_horizontal_spacing = 20;
     const int dim_text_height = 20;
 
-    const int min_sticker_x = 4;
-    const int min_sticker_y = 2;
-
-    const int min_width = dim_frame_w
-        + min_sticker_x * dim_sticker
-        + (min_sticker_x - 1) * dim_horizontal_spacing
-        + dim_frame_e;
-    const int min_height = dim_frame_n
-        + min_sticker_y * (dim_sticker + dim_text_height)
-        + (min_sticker_y - 1) * dim_vertical_spacing
-        + dim_frame_s;
-
     // Abbreviation
     TelegramComms * tc = TelegramComms::Instance();
 
-    // Acceptable resolution?
-    if (mcWidth < min_width ||
-        mcHeight < min_height)
-    {
-        const QString message = tr("Minimum resolution requirements are "
-            "not met. Width must be at least %1, height at least %2.")
-            .arg(QString::number(min_width),
-                 QString::number(min_height));
-        tc -> SendMessage(mcChatID, message);
-        CALL_OUT("");
-        return;
-    }
-    if (mcWidth * mcHeight > 20000000)
+    // Resolution
+    const int width = dim_frame_w
+        + mcColumns * dim_sticker
+        + (mcColumns - 1) * dim_horizontal_spacing
+        + dim_frame_e;
+    const int height = dim_frame_n
+        + mcRows * (dim_sticker + dim_text_height)
+        + (mcRows - 1) * dim_vertical_spacing
+        + dim_frame_s;
+
+    if (width * height > 20000000)
     {
         const QString message = tr("Maximum resolution is limited to 20MP.");
         tc -> SendMessage(mcChatID, message);
@@ -1046,32 +1030,10 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
         return;
     }
 
-    // Number of stickers on each sheet
-    int sheet_columns =
-        (mcWidth - dim_frame_e - dim_frame_w + dim_horizontal_spacing) /
-        (dim_sticker + dim_horizontal_spacing);
-    int sheet_rows =
-        (mcHeight - dim_frame_n - dim_frame_s + dim_vertical_spacing) /
-        (dim_sticker + dim_text_height + dim_vertical_spacing);
-
     QString message = tr("Fitting %1x%2 stickers on the contact sheet.")
-        .arg(QString::number(sheet_columns),
-             QString::number(sheet_rows));
+        .arg(QString::number(mcColumns),
+             QString::number(mcRows));
     tc -> SendMessage(mcChatID, message);
-
-    // Calculate actual values
-    const int slack_x = mcWidth -
-        (dim_frame_w
-        + sheet_columns * dim_sticker
-        + (sheet_columns - 1) * dim_horizontal_spacing
-        + dim_frame_e);
-    const int slack_y = mcHeight -
-        (dim_frame_n
-        + sheet_rows * (dim_sticker + dim_text_height)
-        + (sheet_rows - 1) * dim_vertical_spacing
-        + dim_frame_s);
-    const int act_frame_n = 20 + slack_y/2;
-    const int act_frame_e = 20 + slack_x/2;
 
     // Loop all available sticker sets
     const QStringList all_set_names = tc -> GetAllStickerSetNames();
@@ -1080,9 +1042,9 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
     int sheet_count = 1;
     int num_stickers = 0;
     int num_animated = 0;
-    QPixmap sheet = QPixmap(mcWidth, mcHeight);
+    QPixmap sheet = QPixmap(width, height);
     QPainter * painter = new QPainter(&sheet);
-    painter -> fillRect(0, 0, mcWidth, mcHeight, Qt::white);
+    painter -> fillRect(0, 0, width, height, Qt::white);
     for (const QString & set_name : all_set_names)
     {
         if (!tc -> DoesStickerSetInfoExist(set_name))
@@ -1111,24 +1073,28 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
             Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
         // Render
-        const int x = act_frame_e +
-            column * (dim_sticker + dim_horizontal_spacing)
+        const int base_x = dim_frame_e +
+            column * (dim_sticker + dim_horizontal_spacing);
+        const int sticker_x = base_x
             + (dim_sticker - image.width())/2;
-        const int y = act_frame_n +
-            row * (dim_sticker + dim_text_height + dim_vertical_spacing)
+        const int base_y = dim_frame_n +
+            row * (dim_sticker + dim_text_height + dim_vertical_spacing);
+        const int sticker_y = base_y
             + (dim_sticker - image.height())/2;
-        painter -> drawImage(x, y, image);
+        painter -> drawImage(sticker_x, sticker_y, image);
 
         // Set name
-        painter -> drawText(x, y + dim_sticker + 2, dim_sticker, 15,
-            Qt::AlignCenter, set_name);
+        const int text_x = base_x;
+        const int text_y = base_y + dim_sticker + 2;
+        painter -> drawText(text_x, text_y, dim_sticker, 15,
+            Qt::AlignCenter, set_name.trimmed());
 
         column++;
-        if (column == sheet_columns)
+        if (column == mcColumns)
         {
             column = 0;
             row++;
-            if (row == sheet_rows)
+            if (row == mcRows)
             {
                 row = 0;
                 const QString filename = USER_FILES + QString("Sheet %1.png")
@@ -1138,9 +1104,9 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
 
                 // New sheet
                 delete painter;
-                sheet = QPixmap(mcWidth, mcHeight);
+                sheet = QPixmap(width, height);
                 painter = new QPainter(&sheet);
-                painter -> fillRect(0, 0, mcWidth, mcHeight, Qt::white);
+                painter -> fillRect(0, 0, width, height, Qt::white);
                 sheet_count++;
             }
         }
@@ -1185,11 +1151,14 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
 ///////////////////////////////////////////////////////////////////////////////
 // Contact sheet: single set
 void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
-    const QString & mcrStickerSetName)
+    const QString & mcrStickerSetName, const int mcRows, const int mcColumns)
 {
-    CALL_IN(QString("mcChatID=%1, mcrStickerSetName=%2")
+    CALL_IN(QString("mcChatID=%1, mcrStickerSetName=%2, mcRows=%3, "
+        "mcColumns=%4")
         .arg(CALL_SHOW(mcChatID),
-             CALL_SHOW(mcrStickerSetName)));
+             CALL_SHOW(mcrStickerSetName),
+             CALL_SHOW(mcRows),
+             CALL_SHOW(mcColumns)));
 
     // Check if the set exists
     TelegramComms * tc = TelegramComms::Instance();
@@ -1233,10 +1202,6 @@ void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
         }
     }
 
-    // Default resolution
-    const int sheet_width = 1920;
-    const int sheet_height = 1080;
-
     // Dimensions
     const int dim_sticker = 200;
     const int dim_title_height = 100;
@@ -1247,34 +1212,29 @@ void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
     const int dim_vertical_spacing = 20;
     const int dim_horizontal_spacing = 20;
 
-    // Number of stickers on each sheet
-    int sheet_columns =
-        (sheet_width - dim_frame_e - dim_frame_w + dim_horizontal_spacing) /
-        (dim_sticker + dim_horizontal_spacing);
-    int sheet_rows =
-        (sheet_height - dim_frame_n - dim_title_height - dim_frame_s +
-            dim_vertical_spacing) /
-        (dim_sticker + dim_vertical_spacing);
+    // Resolution
+    const int width = dim_frame_w
+        + mcColumns * dim_sticker
+        + (mcColumns - 1) * dim_horizontal_spacing
+        + dim_frame_e;
+    const int height = dim_title_height
+        + dim_frame_n
+        + mcRows * dim_sticker
+        + (mcRows - 1) * dim_vertical_spacing
+        + dim_frame_s;
+
+    if (width * height > 20000000)
+    {
+        const QString message = tr("Maximum resolution is limited to 20MP.");
+        tc -> SendMessage(mcChatID, message);
+        CALL_OUT("");
+        return;
+    }
 
     QString message = tr("Fitting %1x%2 stickers on the contact sheet.")
-        .arg(QString::number(sheet_columns),
-             QString::number(sheet_rows));
+        .arg(QString::number(mcColumns),
+             QString::number(mcRows));
     tc -> SendMessage(mcChatID, message);
-
-    // Calculate actual values
-    const int slack_x = sheet_width -
-        (dim_frame_w
-        + sheet_columns * dim_sticker
-        + (sheet_columns - 1) * dim_horizontal_spacing
-        + dim_frame_e);
-    const int slack_y = sheet_height -
-        (dim_frame_n
-        + dim_title_height
-        + sheet_rows * dim_sticker
-        + (sheet_rows - 1) * dim_vertical_spacing
-        + dim_frame_s);
-    const int act_frame_n = dim_frame_n + slack_y/2;
-    const int act_frame_e = dim_frame_e + slack_x/2;
 
     // Title font
     QFont title_font("Georgia", 70);
@@ -1295,14 +1255,13 @@ void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
             {
                 delete painter;
             }
-            sheet = QPixmap(sheet_width, sheet_height);
+            sheet = QPixmap(width, height);
             painter = new QPainter(&sheet);
-            painter -> fillRect(0, 0, sheet_width, sheet_height,
-                Qt::white);
+            painter -> fillRect(0, 0, width, height, Qt::white);
 
             // Set name
             painter -> setFont(title_font);
-            painter -> drawText(0, act_frame_n, sheet_width, dim_title_height,
+            painter -> drawText(0, dim_frame_n, width, dim_title_height,
                 Qt::AlignCenter, set_title);
         }
 
@@ -1312,20 +1271,22 @@ void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
             Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
         // Render
-        const int x = act_frame_e +
-            column * (dim_sticker + dim_horizontal_spacing)
+        const int base_x = dim_frame_e +
+            column * (dim_sticker + dim_horizontal_spacing);
+        const int sticker_x = base_x
             + (dim_sticker - image.width())/2;
-        const int y = act_frame_n + dim_title_height +
-            row * (dim_sticker + dim_vertical_spacing)
+        const int base_y = dim_frame_n + dim_title_height +
+            row * (dim_sticker + dim_vertical_spacing);
+        const int sticker_y = base_y
             + (dim_sticker - image.height())/2;
-        painter -> drawImage(x, y, image);
+        painter -> drawImage(sticker_x, sticker_y, image);
 
         column++;
-        if (column == sheet_columns)
+        if (column == mcColumns)
         {
             column = 0;
             row++;
-            if (row == sheet_rows)
+            if (row == mcRows)
             {
                 row = 0;
                 const QString filename = USER_FILES + QString("Sheet %1.png")
