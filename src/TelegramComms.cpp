@@ -52,6 +52,9 @@ TelegramComms::TelegramComms()
 {
     CALL_IN("");
 
+    // Default preferences (also defined valid preference tags)
+    m_DefaultPreferences["provide_sticker_set"] = "always";
+
     // Create some directories
     QDir dir("/");
     if (!dir.exists(BOT_FILES))
@@ -257,7 +260,7 @@ bool TelegramComms::CreateDatabase()
         return false;
     }
 
-    // Create tables
+    // Create tables for Telegram data
     bool success =
         CreateDatabase_Table("button_info")
         && CreateDatabase_Table("button_list_info")
@@ -269,6 +272,10 @@ bool TelegramComms::CreateDatabase()
         && CreateDatabase_Table_StickerSet("sticker_set_info")
         && CreateDatabase_Table("update_info")
         && CreateDatabase_Table("user_info");
+
+    // User preferences
+    success = success
+        && CreateDatabase_Preferences();
 
     // Successful
     CALL_OUT("");
@@ -341,6 +348,32 @@ bool TelegramComms::CreateDatabase_Table_StickerSet(
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Create table for user preferences
+bool TelegramComms::CreateDatabase_Preferences()
+{
+    CALL_IN("");
+
+    // Create table
+    QSqlQuery query;
+    query.exec(QString("CREATE TABLE preferences ("
+       "user_id longlong, "
+       "key text, "
+       "value text);"));
+    if (DatabaseHelper::HasSQLError(query, __FILE__, __LINE__))
+    {
+        const QString reason = tr("SQL error creating table \"preferences\"");
+        MessageLogger::Error(CALL_METHOD, reason);
+        CALL_OUT(reason);
+        return false;
+    }
+
+    CALL_OUT("");
+    return true;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Read database
 bool TelegramComms::ReadDatabase()
 {
@@ -369,6 +402,8 @@ bool TelegramComms::ReadDatabase()
         ReadDatabase_Table_StickerSet("sticker_set_info") &&
         ReadDatabase_Table("update_info", m_UpdateIDToInfo) &&
         ReadDatabase_Table("user_info", m_UserIDToInfo);
+    success = success &&
+        ReadDatabase_Table_Preferences();
     if (!success)
     {
         // Error specifics have been reported elsewhere.
@@ -580,6 +615,40 @@ bool TelegramComms::ReadDatabase_Table_StickerSet(const QString & mcrTableName)
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Read preferences table
+bool TelegramComms::ReadDatabase_Table_Preferences()
+{
+    CALL_IN("");
+
+    // Read entire table
+    QSqlQuery query;
+    query.exec(QString("SELECT user_id, key, value FROM preferences;"));
+    if (DatabaseHelper::HasSQLError(query, __FILE__, __LINE__))
+    {
+        const QString reason = tr("SQL error reading preferences table.");
+        MessageLogger::Error(CALL_METHOD, reason);
+        CALL_OUT(reason);
+        return false;
+    }
+
+    // Collect results
+    while (query.next())
+    {
+        const qint64 user_id = query.value(0).toLongLong();
+        const QString key = query.value(1).toString();
+        const QString value = query.value(2).toString();
+        m_UserIDToPreferences[user_id][key] = value;
+    }
+
+    // Done
+    CALL_OUT("");
+    return true;
+}
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Save info data
 bool TelegramComms::SaveInfoData(const QString & mcrTableName,
     const QHash < QString, QString > & mcrInfoData, const QString & mcrIDType)
@@ -753,6 +822,9 @@ void TelegramComms::UpdateDatabase()
 
     // 01 May 2025
     // CreateDatabase_Table("channel_post_info");
+
+    // 14 May 2025
+    // CreateDatabase_Preferences();
 
     CALL_OUT("");
 }
@@ -948,6 +1020,141 @@ QString TelegramComms::GetUptime() const
 
     CALL_OUT("");
     return uptime;
+}
+
+
+
+// ================================================================ Preferences
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Get preferences
+QHash < QString, QString > TelegramComms::GetPreferences(
+    const qint64 mcUserID) const
+{
+    CALL_IN(QString("mcUserID=%1")
+        .arg(CALL_SHOW(mcUserID)));
+
+    if (!m_UserIDToPreferences.contains(mcUserID))
+    {
+        // Defaults
+        CALL_OUT("");
+        return m_DefaultPreferences;
+    }
+
+    QHash < QString, QString > prefs = m_DefaultPreferences;
+    for (auto key_iterator = m_UserIDToPreferences[mcUserID].keyBegin();
+        key_iterator != m_UserIDToPreferences[mcUserID].keyEnd();
+        key_iterator++)
+    {
+        const QString & key = *key_iterator;
+        prefs[key] = m_UserIDToPreferences[mcUserID][key];
+    }
+
+    CALL_OUT("");
+    return prefs;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Get preferences
+QString TelegramComms::GetPreferenceValue(const qint64 mcUserID,
+    const QString & mcrKey) const
+{
+    CALL_IN(QString("mcUserID=%1, mcrKey=%2")
+        .arg(CALL_SHOW(mcUserID),
+             CALL_SHOW(mcrKey)));
+
+    // Check if tag exists
+    if (!m_DefaultPreferences.contains(mcrKey))
+    {
+        const QString reason = tr("Unknown preferences tag \"%1\".")
+            .arg(mcrKey);
+        MessageLogger::Error(CALL_METHOD, reason);
+        CALL_OUT(reason);
+        return QString();
+    }
+
+    if (m_UserIDToPreferences.contains(mcUserID) &&
+        m_UserIDToPreferences[mcUserID].contains(mcrKey))
+    {
+        CALL_OUT("");
+        return m_UserIDToPreferences[mcUserID][mcrKey];
+    } else
+    {
+        CALL_OUT("");
+        return m_DefaultPreferences[mcrKey];
+    }
+
+    // We never get here
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Set preference value
+void TelegramComms::SetPreferenceValue(const qint64 mcUserID,
+    const QString & mcrKey, const QString & mcrNewValue)
+{
+    CALL_IN(QString("mcUserID=%1, mcrKey=%2, mcrNewValue=%3")
+        .arg(CALL_SHOW(mcUserID),
+             CALL_SHOW(mcrKey),
+             CALL_SHOW(mcrNewValue)));
+
+    // Check if tag exists
+    if (!m_DefaultPreferences.contains(mcrKey))
+    {
+        const QString reason = tr("Unknown preferences tag \"%1\".")
+            .arg(mcrKey);
+        MessageLogger::Error(CALL_METHOD, reason);
+        CALL_OUT(reason);
+        return;
+    }
+
+    // Set value
+    m_UserIDToPreferences[mcUserID][mcrKey] = mcrNewValue;
+
+    // Set value in database
+    QSqlQuery query;
+    query.prepare(QString("DELETE FROM preferences "
+        "WHERE user_id=:user_id "
+        "AND key=:key;"));
+    query.bindValue(":user_id", mcUserID);
+    query.bindValue(":key", mcrKey);
+    query.exec();
+    if (DatabaseHelper::HasSQLError(query, __FILE__, __LINE__))
+    {
+        const QString reason = tr("SQL error removing old preferences value "
+            "\"%1\" for user %2.")
+            .arg(mcrKey,
+                 QString::number(mcUserID));
+        MessageLogger::Error(CALL_METHOD, reason);
+        CALL_OUT(reason);
+        return;
+    }
+
+    query.prepare(QString("INSERT INTO preferences "
+        "(user_id, key, value) VALUES "
+        "(:user_id, :key, :value);"));
+    query.bindValue(":user_id", mcUserID);
+    query.bindValue(":key", mcrKey);
+    query.bindValue(":value", mcrNewValue);
+    query.exec();
+    if (DatabaseHelper::HasSQLError(query, __FILE__, __LINE__))
+    {
+        const QString reason = tr("SQL error adding new preferences value "
+            "\"%1\" for user %2 (new value \"%3\").")
+            .arg(mcrKey,
+                 QString::number(mcUserID),
+                 mcrNewValue);
+        MessageLogger::Error(CALL_METHOD, reason);
+        CALL_OUT(reason);
+        return;
+    }
+
+    CALL_OUT("");
 }
 
 

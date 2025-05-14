@@ -59,6 +59,7 @@ private:
     bool CreateDatabase_Table(const QString & mcrTableName,
         const QString & mcrIDType = "bigint");
     bool CreateDatabase_Table_StickerSet(const QString & mcrTableName);
+    bool CreateDatabase_Preferences();
 
     // Read database
     bool ReadDatabase();
@@ -67,6 +68,7 @@ private:
     bool ReadDatabase_Table(const QString & mcrTableName,
         QHash < QString, QHash < QString, QString > > & mrInfoData);
     bool ReadDatabase_Table_StickerSet(const QString & mcrTableName);
+    bool ReadDatabase_Table_Preferences();
 
     // Save info data
     bool SaveInfoData(const QString & mcrTableName,
@@ -113,6 +115,22 @@ public:
     QString GetUptime() const;
 private:
     QDateTime m_StartDateTime;
+
+
+
+    // ============================================================ Preferences
+public:
+    // Get preferences
+    QHash < QString, QString > GetPreferences(const qint64 mcUserID) const;
+    QString GetPreferenceValue(const qint64 mcUserID,
+        const QString & mcrKey) const;
+
+    // Set preference value
+    void SetPreferenceValue(const qint64 mcUserID, const QString & mcrKey,
+        const QString & mcrNewValue);
+private:
+    QHash < qint64, QHash < QString, QString > > m_UserIDToPreferences;
+    QHash < QString, QString > m_DefaultPreferences;
 
 
 

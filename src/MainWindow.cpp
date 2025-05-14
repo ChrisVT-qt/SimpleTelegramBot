@@ -518,6 +518,11 @@ void MainWindow::CommandReceived(const qint64 mcUserID, const qint64 mcChatID,
             Command_Help(mcUserID, mcChatID, mcMessageID, mcrParameters);
             break;
         }
+        if (mcrCommand == "set")
+        {
+            Command_Set(mcUserID, mcChatID, mcMessageID, mcrParameters);
+            break;
+        }
         if (mcrCommand == "start")
         {
             Command_Start(mcUserID, mcChatID, mcMessageID, mcrParameters);
@@ -609,6 +614,8 @@ void MainWindow::Command_Help(const qint64 mcUserID, const qint64 mcChatID,
         message += tr("/contactsheets - Creates contact sheets with samples "
             "of available sticker sets.\n");
         message += tr("/help - Provides help on available commands.\n");
+        message += tr("/set - Set some personal preferences for bot "
+            "behavior.\n");
         message += tr("/start - Introduction to the capabilities of this "
             "bot.\n");
         message += tr("/stickerset - Downloaded a given sticker set.");
@@ -622,6 +629,20 @@ void MainWindow::Command_Help(const qint64 mcUserID, const qint64 mcChatID,
             "- [command] is a valid command for this bot.\n"
             "Result:\n"
             "- Help on the command.");
+    } else if (mcrParameters == "set")
+    {
+        // /set provide_sticker_set always|once|archive_only
+        message = tr("Command:\n"
+            "/set [parameter] [value]\n"
+            "Purpose:\n"
+            "- To set personal preferences for bot behavior.\n"
+            "- Or, to show current preferences.\n"
+            "Parameters:\n"
+            "- [parameter] is a preferences parameter: provide_sticker_set\n"
+            "- If no parameter is provided (just /set by itself), the current "
+            "preferences are shown.\n"
+            "Result:\n"
+            "- The desired bot behavior moving forward.");
     } else if (mcrParameters == "stickerset")
     {
         message = tr("Command:\n"
@@ -742,7 +763,7 @@ void MainWindow::Command_StickerSet(const qint64 mcUserID,
     }
 
     // Get sticker set
-    DownloadNewStickerSet(mcChatID, sticker_set_name);
+    DownloadNewStickerSet(mcUserID, mcChatID, sticker_set_name);
 
     CALL_OUT("");
 }
@@ -787,7 +808,7 @@ void MainWindow::SeparateCommand_StickerSet(const qint64 mcUserID,
         return;
     }
     const QString sticker_set_name = sticker_info["set_name"];
-    DownloadNewStickerSet(mcChatID, sticker_set_name);
+    DownloadNewStickerSet(mcUserID, mcChatID, sticker_set_name);
 
     CALL_OUT("");
 }
@@ -796,11 +817,12 @@ void MainWindow::SeparateCommand_StickerSet(const qint64 mcUserID,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Download a sticker set if we haven't done so yet
-void MainWindow::DownloadNewStickerSet(const qint64 mcChatID,
-    const QString & mcrStickerSetName)
+void MainWindow::DownloadNewStickerSet(const qint64 mcUserID,
+    const qint64 mcChatID, const QString & mcrStickerSetName)
 {
-    CALL_IN(QString("mcChatID=%1, mcrStickerSetName=%2")
-        .arg(CALL_SHOW(mcChatID),
+    CALL_IN(QString("mcUserID=%1, mcChatID=%2, mcrStickerSetName=%3")
+        .arg(CALL_SHOW(mcUserID),
+             CALL_SHOW(mcChatID),
              CALL_SHOW(mcrStickerSetName)));
 
     // Check if sticker set is already being downloaded
@@ -814,6 +836,7 @@ void MainWindow::DownloadNewStickerSet(const qint64 mcChatID,
         tc -> SendMessage(mcChatID, message);
     } else
     {
+        m_StickerSetNameToUserIDs[mcrStickerSetName] += mcUserID;
         m_StickerSetNameToChatIDs[mcrStickerSetName] += mcChatID;
         th -> DownloadStickerSet(mcrStickerSetName);
     }
@@ -837,58 +860,48 @@ void MainWindow::StickerSetReceived(const QString & mcrStickerSetName)
     QString set_title = set_info["title"];
     set_title.replace("\n", " ");
 
-    // Check if upload was suppressed
-    if (m_SuppressStickerSetUpload.contains(mcrStickerSetName))
+    // Check what to do
+    for (int index = 0;
+         index < m_StickerSetNameToChatIDs[mcrStickerSetName].size();
+         index++)
     {
-        const QStringList set_stickers =
-            tc -> GetStickerSetFileIDs(mcrStickerSetName);
-        const QString message = tr("Upload of ZIP file suppressed for "
-            "sticker set %1 (%2) with %3 stickers.")
-            .arg(mcrStickerSetName,
-                 set_title,
-                 QString::number(set_stickers.size()));
-        for (auto chat_iterator =
-                m_StickerSetNameToChatIDs[mcrStickerSetName].constBegin();
-            chat_iterator !=
-                m_StickerSetNameToChatIDs[mcrStickerSetName].constEnd();
-            chat_iterator++)
+        const qint64 chat_id =
+            m_StickerSetNameToChatIDs[mcrStickerSetName][index];
+        const qint64 user_id =
+            m_StickerSetNameToUserIDs[mcrStickerSetName][index];
+
+        const QString action =
+            tc -> GetPreferenceValue(user_id, "provide_sticker_set");
+        if (action == "never")
         {
-            const qint64 chat_id = *chat_iterator;
+            // Do nothing
+            const QString message = tr("Sticker set \"%1\" was downloaded.")
+                .arg(mcrStickerSetName);
             tc -> SendMessage(chat_id, message);
-        }
-    } else
-    {
-        // Filename
-        TelegramHelper * th = TelegramHelper::Instance();
-        const QString filename =
-            th -> GetStickerSetZIPFilename(mcrStickerSetName);
-        for (auto chat_iterator =
-                m_StickerSetNameToChatIDs[mcrStickerSetName].constBegin();
-            chat_iterator !=
-                m_StickerSetNameToChatIDs[mcrStickerSetName].constEnd();
-            chat_iterator++)
+        } else if (action == "once" &&
+                   m_StickerSetNameHasBeenSentToUserIDs[mcrStickerSetName]
+                        .contains(user_id))
         {
-            const qint64 chat_id = *chat_iterator;
-            if (m_StickerSetNameHasBeenSentTOChatIDs[mcrStickerSetName]
-                .contains(chat_id))
-            {
-                // Sticker set has already been uploaded to this chat
-                QString message = tr("Sticker set %1 (%2) has already been "
-                    "uploaded to this chat.")
-                    .arg(mcrStickerSetName,
-                         set_title);
-                tc -> SendMessage(chat_id, message);
-            } else
-            {
-                tc -> UploadFile(chat_id, filename);
-                m_StickerSetNameHasBeenSentTOChatIDs[mcrStickerSetName] +=
-                    chat_id;
-            }
+            // Do nothing
+            const QString message =
+                tr("Sticker set \"%1\" has been sent to you before.")
+                    .arg(mcrStickerSetName);
+            tc -> SendMessage(chat_id, message);
+        } else
+        {
+            // Filename
+            TelegramHelper * th = TelegramHelper::Instance();
+            const QString filename =
+                th -> GetStickerSetZIPFilename(mcrStickerSetName);
+            tc -> UploadFile(chat_id, filename);
+            m_StickerSetNameHasBeenSentToUserIDs[mcrStickerSetName] +=
+                user_id;
         }
     }
 
     // No need to keep this around
     m_StickerSetNameToChatIDs.remove(mcrStickerSetName);
+    m_StickerSetNameToUserIDs.remove(mcrStickerSetName);
 
     // Check if there is current work going on
     if (m_ShuttingDown &&
@@ -1332,6 +1345,89 @@ void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Command /set
+void MainWindow::Command_Set(const qint64 mcUserID, const qint64 mcChatID,
+    const qint64 mcMessageID, const QString & mcrParameters)
+{
+    CALL_IN(QString("mcUserID=%1, mcChatID=%2, mcMessageID=%3, "
+        "mcrParameters=%4")
+        .arg(CALL_SHOW(mcUserID),
+             CALL_SHOW(mcChatID),
+             CALL_SHOW(mcMessageID),
+             CALL_SHOW(mcrParameters)));
+
+    // Abbreviation
+    TelegramComms * tc = TelegramComms::Instance();
+
+    // List all preference settings if no parameter is given
+    if (mcrParameters.isEmpty())
+    {
+        const QHash < QString, QString > prefs =
+            tc -> GetPreferences(mcUserID);
+        QStringList sorted_keys = prefs.keys();
+        std::sort(sorted_keys.begin(), sorted_keys.end());
+        QString message = tr("Preferences:\n");
+        for (const QString & key : sorted_keys)
+        {
+            message += QString("%1: %2")
+                .arg(key,
+                     prefs[key]);
+        }
+        tc -> SendMessage(mcChatID, message);
+        CALL_OUT("");
+        return;
+    }
+
+    // Split key and value
+    static const QRegularExpression format_key_value(
+        "^([a-zA-Z_]+) +([^ ].*)$");
+    const QRegularExpressionMatch match_key_value =
+        format_key_value.match(mcrParameters);
+    if (!match_key_value.hasMatch())
+    {
+        const QString reason = tr("\"%1\" has an unexpected format.")
+            .arg(mcrParameters);
+        MessageLogger::Error(CALL_METHOD, reason);
+        CALL_OUT(reason);
+        return;
+    }
+    const QString key = match_key_value.captured(1);
+    const QString value = match_key_value.captured(2);
+
+    // provide_sticker_set
+    if (key == "provide_sticker_set")
+    {
+        if (value != "always" &&
+            value != "never" &&
+            value != "once")
+        {
+            const QString reason = tr("%1 should have one of the following "
+                "values: \"always\", \"never\", \"once\".")
+                .arg(key);
+            tc -> SendMessage(mcChatID, reason);
+        } else
+        {
+            tc -> SetPreferenceValue(mcUserID, key, value);
+            const QString reason = tr("%1 set to \"%2\".")
+                .arg(key,
+                     value);
+            tc -> SendMessage(mcChatID, reason);
+        }
+        CALL_OUT("");
+        return;
+    }
+
+    // Unknown preference parameter
+    const QString reason = tr("\"%1\" has not been handled.")
+        .arg(key);
+    tc -> SendMessage(mcChatID, reason);
+
+    CALL_OUT("");
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Command /start
 void MainWindow::Command_Start(const qint64 mcUserID,
     const qint64 mcChatID, const qint64 mcMessageID,
@@ -1348,6 +1444,7 @@ void MainWindow::Command_Start(const qint64 mcUserID,
 
     CALL_OUT("");
 }
+
 
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -99,12 +99,12 @@ private:
         const qint64 mcMessageID, const QString & mcrParameters);
     void SeparateCommand_StickerSet(const qint64 mcUserID,
         const qint64 mcChatID, const qint64 mcForwardedMessageID);
-    void DownloadNewStickerSet(const qint64 mcChatID,
+    void DownloadNewStickerSet(const qint64 mcUserID, const qint64 mcChatID,
         const QString & mcrStickerSetName);
 
-    QSet < QString > m_SuppressStickerSetUpload;
-    QHash < QString, QSet < qint64 > > m_StickerSetNameToChatIDs;
-    QHash < QString, QSet < qint64 > > m_StickerSetNameHasBeenSentTOChatIDs;
+    QHash < QString, QList < qint64 > > m_StickerSetNameToChatIDs;
+    QHash < QString, QList < qint64 > > m_StickerSetNameToUserIDs;
+    QHash < QString, QSet < qint64 > > m_StickerSetNameHasBeenSentToUserIDs;
 private slots:
     void StickerSetInfoFailed(const QString & mcrStickerSetName);
     void StickerSetReceived(const QString & mcrStickerSetName);
@@ -122,6 +122,11 @@ private:
     void Command_ContactSheets_Render(const qint64 mcChatID,
         const int mcRows, const int mcColumns,
         const QStringList & mcrStickerNames);
+
+
+    // == Command /set
+    void Command_Set(const qint64 mcUserID, const qint64 mcChatID,
+        const qint64 mcMessageID, const QString & mcrParameters);
 
 
     // == Command /start
