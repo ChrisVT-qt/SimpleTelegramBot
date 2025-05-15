@@ -277,6 +277,10 @@ void MainWindow::RegisterCommands()
     json_command["description"] = tr("Provides help on available commands");
     json_all_commands << json_command;
 
+    json_command["command"] = "set";
+    json_command["description"] = tr("Set user preferences");
+    json_all_commands << json_command;
+
     json_command["command"] = "stickerset";
     json_command["description"] = tr("Downloaded a given sticker set");
     json_all_commands << json_command;
