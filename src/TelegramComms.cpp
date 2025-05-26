@@ -1772,6 +1772,14 @@ QHash < QString, QString > TelegramComms::Parse_Message(
     //   "new_chat_title":"Shima's MakeFox Bot"
     // }
 
+    // Channel received new picture
+    // {
+    //   "chat":{...},
+    //   "date":1748260123,
+    //   "from":{...},
+    //   "message_id":61565,
+    //   "new_chat_photo":[...],
+    //  }
 
 
 
@@ -2012,6 +2020,33 @@ QHash < QString, QString > TelegramComms::Parse_Message(
                 return QHash < QString, QString >();
             }
             message_info["new_chat_member_id"] = user_info["id"];
+            continue;
+        }
+
+        if (key == "new_chat_photo")
+        {
+            QJsonArray photos = mcrMessage[key].toArray();
+            QJsonObject last_photo = photos.last().toObject();
+            if (last_photo.isEmpty())
+            {
+                // Not successful
+                const QString reason =
+                    tr("New channel photo array did not have a last entry.");
+                MessageLogger::Error(CALL_METHOD, reason);
+                CALL_OUT(reason);
+                return QHash < QString, QString >();
+            }
+            const QHash < QString, QString > photo_info =
+                Parse_File(last_photo);
+            if (photo_info.isEmpty())
+            {
+                const QString reason = tr("Error parsing in picture list "
+                    "(new channel photo)");
+                MessageLogger::Error(CALL_METHOD, reason);
+                CALL_OUT(reason);
+                return QHash < QString, QString >();
+            }
+            message_info["new_chat_photo_id"] = photo_info["id"];
             continue;
         }
 

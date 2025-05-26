@@ -442,6 +442,10 @@ void MainWindow::MessageReceived(const qint64 mcChatID, qint64 mcMessageID)
         // Add line to log
         message = tr("Set new chat title \"%1\".")
             .arg(new_chat_title);
+    } else if (message_info.contains("new_chat_photo_id"))
+    {
+        // Add line to log
+        message = tr("New chat photo has been set.");
     } else
     {
         // Some message we cannot show right now
