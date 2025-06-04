@@ -403,6 +403,13 @@ void MainWindow::MessageReceived(const qint64 mcChatID, qint64 mcMessageID)
             return;
         }
 
+        // Check if we're "greedy"
+        const QString greedy = tc -> GetPreferenceValue(user_id, "greedy");
+        if (greedy == "yes")
+        {
+            SeparateCommand_StickerSet(user_id, mcChatID, mcMessageID);
+        }
+
         // Add line to log
         message = tr("Sticker forwarded in message from %1.")
             .arg(forward_user);
@@ -646,7 +653,8 @@ void MainWindow::Command_Help(const qint64 mcUserID, const qint64 mcChatID,
             "- To set personal preferences for bot behavior.\n"
             "- Or, to show current preferences.\n"
             "Parameters:\n"
-            "- [parameter] is a preferences parameter: provide_sticker_set\n"
+            "- [parameter] is a preferences parameter: provide_sticker_set, "
+            "greedy\n"
             "- If no parameter is provided (just /set by itself), the current "
             "preferences are shown.\n"
             "Result:\n"
@@ -1401,6 +1409,28 @@ void MainWindow::Command_Set(const qint64 mcUserID, const qint64 mcChatID,
     }
     const QString key = match_key_value.captured(1);
     const QString value = match_key_value.captured(2);
+
+    // greedy
+    if (key == "greedy")
+    {
+        if (value != "yes" &&
+            value != "no")
+        {
+            const QString reason = tr("%1 should have one of the following "
+                "values: \"yes\", \"no\".")
+                .arg(key);
+            tc -> SendMessage(mcChatID, reason);
+        } else
+        {
+            tc -> SetPreferenceValue(mcUserID, key, value);
+            const QString reason = tr("%1 set to \"%2\".")
+                .arg(key,
+                     value);
+            tc -> SendMessage(mcChatID, reason);
+        }
+        CALL_OUT("");
+        return;
+    }
 
     // provide_sticker_set
     if (key == "provide_sticker_set")

@@ -54,6 +54,7 @@ TelegramComms::TelegramComms()
 
     // Default preferences (also defined valid preference tags)
     m_DefaultPreferences["provide_sticker_set"] = "always";
+    m_DefaultPreferences["greedy"] = "no";
 
     // Create some directories
     QDir dir("/");
