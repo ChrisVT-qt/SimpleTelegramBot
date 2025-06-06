@@ -181,8 +181,11 @@ void MainWindow::UpdateStatus()
     // Get download queue size
     TelegramComms * tc = TelegramComms::Instance();
     const int queue_size = tc -> GetDownloadWorkListSize();
-    m_Status -> setText(tr("Download queue: %1 files")
-        .arg(QString::number(queue_size)));
+    const int num_stickersets = tc -> GetAllStickerSetNames().size();
+    const QString text = tr("Download queue: %1 files, %2 sticker sets")
+        .arg(QString::number(queue_size),
+             QString::number(num_stickersets));
+    m_Status -> setText(text);
 
     // See you again in 2s
     QTimer::singleShot(STATUS_REFRESH_DELAY,
@@ -918,6 +921,9 @@ void MainWindow::StickerSetReceived(const QString & mcrStickerSetName)
     // No need to keep this around
     m_StickerSetNameToChatIDs.remove(mcrStickerSetName);
     m_StickerSetNameToUserIDs.remove(mcrStickerSetName);
+
+    // Update status
+    UpdateStatus();
 
     // Check if there is current work going on
     if (m_ShuttingDown &&
