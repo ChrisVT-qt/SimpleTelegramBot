@@ -94,17 +94,17 @@ QList < int > StringHelper::SortHash(const QHash < int, QString > mcHash)
         const int id = *id_iterator;
         raw << QPair < int, QString >(id, mcHash[id]);
     }
-    
+
     // Sort
     std::stable_sort(raw.begin(), raw.end(), &LessThan_IntString);
-    
+
     // Recover keys in the correct order
     QList < int > ret;
     for (int idx = 0; idx < raw.size(); idx++)
     {
         ret << raw[idx].first;
     }
-    
+
     // Done.
     CALL_OUT("");
     return ret;
@@ -163,17 +163,17 @@ QList < int > StringHelper::SortHash(const QHash < int, double > mcHash)
         const int id = *id_iterator;
         raw << QPair < int, double >(id, mcHash[id]);
     }
-    
+
     // Sort
     std::stable_sort(raw.begin(), raw.end(), &LessThan_IntDouble);
-    
+
     // Recover keys in the correct order
     QList < int > ret;
     for (int idx = 0; idx < raw.size(); idx++)
     {
         ret << raw[idx].first;
     }
-    
+
     // Done.
     CALL_OUT("");
     return ret;
@@ -197,17 +197,17 @@ QList < int > StringHelper::SortHash(const QHash < int, int > mcHash)
         const int id = *id_iterator;
         raw << QPair < int, int >(id, mcHash[id]);
     }
-    
+
     // Sort
     std::stable_sort(raw.begin(), raw.end(), &LessThan_IntInt);
-    
+
     // Recover keys in the correct order
     QList < int > ret;
     for (int idx = 0; idx < raw.size(); idx++)
     {
         ret << raw[idx].first;
     }
-    
+
     // Done.
     CALL_OUT("");
     return ret;
@@ -255,10 +255,10 @@ QList < QString > StringHelper::SortHash(
         const QString key = *key_iterator;
         raw << QPair < QString, QString >(key, mcHash[key]);
     }
-    
+
     // Sort
     std::sort(raw.begin(), raw.end(), &LessThan_StringString);
-    
+
     // Recover keys in the correct order
     QList < QString > ret;
     for (int idx = 0;
@@ -267,7 +267,7 @@ QList < QString > StringHelper::SortHash(
     {
         ret << raw[idx].first;
     }
-    
+
     // Done.
     CALL_OUT("");
     return ret;
@@ -292,10 +292,10 @@ QList < QString > StringHelper::SortHash(
         const QString key = *key_iterator;
         raw << QPair < QString, int >(key, mcHash[key]);
     }
-    
+
     // Sort
     std::sort(raw.begin(), raw.end(), &LessThan_StringInt);
-    
+
     // Recover keys in the correct order
     QList < QString > ret;
     for (int idx = 0;
@@ -304,10 +304,33 @@ QList < QString > StringHelper::SortHash(
     {
         ret << raw[idx].first;
     }
-    
+
     // Done.
     CALL_OUT("");
     return ret;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Sort and return indexes
+QList < int > StringHelper::SortAndReturnIndex(const QStringList & mcrData)
+{
+    CALL_IN(QString("mcrData=%1")
+        .arg(CALL_SHOW(mcrData)));
+
+    QHash < int, QString > data;
+    for (int index = 0;
+         index < mcrData.size();
+         index++)
+    {
+        data[index] = mcrData[index];
+    }
+
+    const QList < int > indices = SortHash(data);
+
+    CALL_OUT("");
+    return indices;
 }
 
 
@@ -349,7 +372,7 @@ bool StringHelper::GreaterThan_IntString(const QPair < int, QString > mcLeft,
 ///////////////////////////////////////////////////////////////////////////////
 // Compare Strings but keep ID with it
 bool StringHelper::LessThan_StringString(
-    const QPair < QString, QString > mcLeft, 
+    const QPair < QString, QString > mcLeft,
     const QPair < QString, QString > mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -367,7 +390,7 @@ bool StringHelper::LessThan_StringString(
 ///////////////////////////////////////////////////////////////////////////////
 // Compare ints but keep ID with it
 bool StringHelper::LessThan_StringInt(
-    const QPair < QString, int > mcLeft, 
+    const QPair < QString, int > mcLeft,
     const QPair < QString, int > mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -382,7 +405,7 @@ bool StringHelper::LessThan_StringInt(
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare ints but keep ID with it
-bool StringHelper::LessThan_IntInt(const QPair < int, int > mcLeft, 
+bool StringHelper::LessThan_IntInt(const QPair < int, int > mcLeft,
     const QPair < int, int > mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -397,7 +420,7 @@ bool StringHelper::LessThan_IntInt(const QPair < int, int > mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare doubles but keep ID with it
-bool StringHelper::LessThan_IntDouble(const QPair < int, double > mcLeft, 
+bool StringHelper::LessThan_IntDouble(const QPair < int, double > mcLeft,
     const QPair < int, double > mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -412,7 +435,7 @@ bool StringHelper::LessThan_IntDouble(const QPair < int, double > mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare dates but keep ID with it
-bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft, 
+bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
     const QPair < int, QString > mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -421,7 +444,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
 
     // By definition, "empty" comes before anything that has a value.
     // (e.g. "" is before everything, and "2009" is before "2009-01-01")
-    
+
     // Speed-up - this will address most cases
     // (both full date/time, or both empty)
     if (mcLeft.second.size() == mcRight.second.size())
@@ -429,9 +452,9 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
         CALL_OUT("");
         return (mcLeft.second < mcRight.second);
     }
-    
+
     // Date format is YYYY-MM-DD hh:mm:ss. Dates may be partial.
-    
+
     // Simple checks
     if (mcLeft.second.isEmpty())
     {
@@ -445,7 +468,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
         CALL_OUT("");
         return false;
     }
-    
+
     // Break up date
     static const QRegularExpression split(
         "^([0-9]{4})(?:-(0[1-9]|1[0-2])(?:-(0[1-9]|[12][0-9]|3[01])"
@@ -497,7 +520,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
     }
     if (right_year.isEmpty())
     {
-        // Left year is not empty, and 
+        // Left year is not empty, and
         // anything <= "" is false
         CALL_OUT("");
         return false;
@@ -516,7 +539,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
     }
     if (right_month.isEmpty())
     {
-        // Left month is not empty, and 
+        // Left month is not empty, and
         // anything < "" is false
         CALL_OUT("");
         return false;
@@ -535,7 +558,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
     }
     if (right_day.isEmpty())
     {
-        // Left day is not empty, and 
+        // Left day is not empty, and
         // anything < "" is false
         CALL_OUT("");
         return false;
@@ -554,7 +577,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
     }
     if (right_hour.isEmpty())
     {
-        // Left hour is not empty, and 
+        // Left hour is not empty, and
         // anything < "" is false
         CALL_OUT("");
         return false;
@@ -573,7 +596,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
     }
     if (right_minute.isEmpty())
     {
-        // Left minute is not empty, and 
+        // Left minute is not empty, and
         // anything < "" is false
         CALL_OUT("");
         return false;
@@ -583,7 +606,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
         CALL_OUT("");
         return (left_minute < right_minute);
     }
-    
+
     // Second
     if (left_second.isEmpty())
     {
@@ -592,7 +615,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
     }
     if (right_second.isEmpty())
     {
-        // Left second is not empty, and 
+        // Left second is not empty, and
         // anything <= "" is false
         CALL_OUT("");
         return false;
@@ -606,7 +629,7 @@ bool StringHelper::LessThan_IntDate(const QPair < int, QString > mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare Strings with natural order
-bool StringHelper::LessThan_Natural(const QString mcLeft, 
+bool StringHelper::LessThan_Natural(const QString mcLeft,
     const QString mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -615,7 +638,7 @@ bool StringHelper::LessThan_Natural(const QString mcLeft,
 
     // Cache for speed-up
     static QHash < QString, QList < QString > > cache;
-    
+
     // Quick trivial check
     QString left(mcLeft.toLower());
     QString right(mcRight.toLower());
@@ -625,7 +648,7 @@ bool StringHelper::LessThan_Natural(const QString mcLeft,
         CALL_OUT("");
         return false;
     }
-    
+
     // Regular expressions don't like control characters
     left.replace("\n", " ");
     left.replace("\t", " ");
@@ -657,7 +680,7 @@ bool StringHelper::LessThan_Natural(const QString mcLeft,
         left_head = cache[left][0];
         left_number = cache[left][1];
         left = cache[left][2];
-        
+
         // Split right
         if (!cache.contains(right))
         {
@@ -687,9 +710,9 @@ bool StringHelper::LessThan_Natural(const QString mcLeft,
             CALL_OUT("");
             return false;
         }
-        
+
         // Check number
-        
+
         // Kill heading zeros
         QString left_no_zeros(left_number);
         while (left_no_zeros.left(1) == "0")
@@ -762,7 +785,7 @@ bool StringHelper::GreaterThan_Natural(const QString mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare shutter times
-bool StringHelper::LessThan_ShutterTime(const QString mcLeft, 
+bool StringHelper::LessThan_ShutterTime(const QString mcLeft,
     const QString mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -770,10 +793,10 @@ bool StringHelper::LessThan_ShutterTime(const QString mcLeft,
              CALL_SHOW(mcRight)));
 
     // Either number, or "1/Number", or empty
-    
+
     // The user of this function has to make sure that the strings
     // are actually shutter times.
-    
+
     // Empty is first.
     if (mcLeft.isEmpty())
     {
@@ -819,7 +842,7 @@ bool StringHelper::LessThan_ShutterTime(const QString mcLeft,
     {
         right_value = mcRight.toDouble();
     }
-    
+
     // Return comparison
     if (right_is_inf)
     {
@@ -840,7 +863,7 @@ bool StringHelper::LessThan_ShutterTime(const QString mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare shutter times
-bool StringHelper::GreaterThan_ShutterTime(const QString mcLeft, 
+bool StringHelper::GreaterThan_ShutterTime(const QString mcLeft,
     const QString mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -848,10 +871,10 @@ bool StringHelper::GreaterThan_ShutterTime(const QString mcLeft,
              CALL_SHOW(mcRight)));
 
     // Either number, or "1/Number", or empty
-    
+
     // The user of this function has to make sure that the strings
     // are actually shutter times.
-    
+
     // Empty is first.
     if (mcRight.isEmpty())
     {
@@ -897,7 +920,7 @@ bool StringHelper::GreaterThan_ShutterTime(const QString mcLeft,
     {
         right_value = mcRight.toDouble();
     }
-    
+
     // Return comparison
     if (left_is_inf)
     {
@@ -918,7 +941,7 @@ bool StringHelper::GreaterThan_ShutterTime(const QString mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare biases
-bool StringHelper::LessThan_Bias(const QString mcLeft, 
+bool StringHelper::LessThan_Bias(const QString mcLeft,
     const QString mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -926,10 +949,10 @@ bool StringHelper::LessThan_Bias(const QString mcLeft,
              CALL_SHOW(mcRight)));
 
     // Either "0", "+number", or "-number".
-    
+
     // The user of this function has to make sure that the strings
     // are actually shutter times.
-    
+
     // Calculate values
     double left_value = 0;
     if (mcLeft.startsWith("+"))
@@ -953,7 +976,7 @@ bool StringHelper::LessThan_Bias(const QString mcLeft,
     {
         right_value = mcRight.toDouble();
     }
-    
+
     // Comparison
     CALL_OUT("");
     return (left_value < right_value);
@@ -963,7 +986,7 @@ bool StringHelper::LessThan_Bias(const QString mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare biases
-bool StringHelper::GreaterThan_Bias(const QString mcLeft, 
+bool StringHelper::GreaterThan_Bias(const QString mcLeft,
     const QString mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -971,10 +994,10 @@ bool StringHelper::GreaterThan_Bias(const QString mcLeft,
              CALL_SHOW(mcRight)));
 
     // Either "0", "+number", or "-number".
-    
+
     // The user of this function has to make sure that the strings
     // are actually shutter times.
-    
+
     // Calculate values
     double left_value = 0;
     if (mcLeft.startsWith("+"))
@@ -998,7 +1021,7 @@ bool StringHelper::GreaterThan_Bias(const QString mcLeft,
     {
         right_value = mcRight.toDouble();
     }
-    
+
     // Comparison
     CALL_OUT("");
     return (left_value > right_value);
@@ -1008,7 +1031,7 @@ bool StringHelper::GreaterThan_Bias(const QString mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare F stops
-bool StringHelper::LessThan_FStop(const QString mcLeft, 
+bool StringHelper::LessThan_FStop(const QString mcLeft,
     const QString mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -1028,7 +1051,7 @@ bool StringHelper::LessThan_FStop(const QString mcLeft,
         CALL_OUT("");
         return false;
     }
-    
+
     // Convert
     const double left = mcLeft.mid(2).toDouble();
     const double right = mcRight.mid(2).toDouble();
@@ -1041,7 +1064,7 @@ bool StringHelper::LessThan_FStop(const QString mcLeft,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Compare F stops
-bool StringHelper::GreaterThan_FStop(const QString mcLeft, 
+bool StringHelper::GreaterThan_FStop(const QString mcLeft,
     const QString mcRight)
 {
     CALL_IN(QString("mcLeft=%1, mcRight=%2")
@@ -1061,7 +1084,7 @@ bool StringHelper::GreaterThan_FStop(const QString mcLeft,
         CALL_OUT("");
         return false;
     }
-    
+
     // Convert
     const double left = mcLeft.mid(2).toDouble();
     const double right = mcRight.mid(2).toDouble();
@@ -1354,13 +1377,13 @@ QString StringHelper::GetBracketedPortion(QString & mrText)
             break;
         }
     }
-    
+
     // Return value
     QString ret = mrText.left(idx);
 
     // All the rest
     mrText = mrText.right(mrText.size() - idx);
-    
+
     // Done
     CALL_OUT("");
     return ret;
@@ -1439,7 +1462,7 @@ QByteArray StringHelper::DecodeText(const QByteArray mcBody,
                     index += 3;
                     continue;
                 }
-                
+
                 // Check for something to decode
                 if (index < mcBody.size() - 2)
                 {
@@ -1464,7 +1487,7 @@ QByteArray StringHelper::DecodeText(const QByteArray mcBody,
                         }
                     }
                 }
-                
+
                 // Just an equal sign, not an encoded character.
                 decoded += '=';
                 index++;
@@ -1493,9 +1516,9 @@ QByteArray StringHelper::DecodeText(const QByteArray mcBody,
             tr("Unknown transfer encoding \"%1\".").arg(mcTransferEncoding);
         MessageLogger::Error(CALL_METHOD, reason);
     }
-    
+
     // === Convert character sets
-    
+
     // Check if we need to guess the charset
     QString charset = mcCharset;
     if (charset == "unknown-8bit" ||
@@ -1504,7 +1527,7 @@ QByteArray StringHelper::DecodeText(const QByteArray mcBody,
     {
         charset = GuessCharset(decoded);
     }
-    
+
     QByteArray ret;
     if (charset == "utf-8")
     {
@@ -1607,7 +1630,7 @@ QByteArray StringHelper::DecodeText(const QByteArray mcBody,
         MessageLogger::Error(CALL_METHOD, reason);
         ret = decoded;
     }
-    
+
     // Done
     CALL_OUT("");
     return ret;
@@ -1631,7 +1654,7 @@ QString StringHelper::GuessCharset(const QByteArray mcText)
     {
         char_count[(unsigned int)mcText.at(idx)]++;
     }
-    
+
     // Set for plain ASCII
     static QSet < int > ascii;
     if (ascii.isEmpty())
@@ -1643,7 +1666,7 @@ QString StringHelper::GuessCharset(const QByteArray mcText)
             ascii += char_value;
         }
     }
-    
+
     // Set for ISO-8859-1 (Latin-1)
     static QSet < int > iso_8859_1;
     if (iso_8859_1.isEmpty())
@@ -1676,7 +1699,7 @@ QString StringHelper::GuessCharset(const QByteArray mcText)
             windows_1252 += char_value;
         }
     }
-    
+
     // Now guess character set
     const QSet < int > used_characters(char_count.keyBegin(),
         char_count.keyEnd());
@@ -1722,7 +1745,7 @@ QString StringHelper::GuessCharset(const QByteArray mcText)
         CALL_OUT("");
         return "windows-1252";
     }
-    
+
     // Approximate match only.
     if (penalty_ascii <= penalty_iso_8859_1 &&
         penalty_ascii <= penalty_windows_1252)
@@ -1742,7 +1765,7 @@ QString StringHelper::GuessCharset(const QByteArray mcText)
         CALL_OUT("");
         return "windows-1252";
     }
-    
+
     // Can't end up here.
     CALL_OUT("");
     return "unknown-8bit";
@@ -1787,7 +1810,7 @@ QByteArray StringHelper::ConvertISO8859_1ToUTF8(const QByteArray mcText)
 
     // From https://github.com/sebkirche/pbniregex/blob/master/stuff/
     //      CP1252%20%20%20ISO-8859-1%20%20%20UTF-8%20Conversion%20Chart.htm
-    
+
     // Create character mapper
     QHash < unsigned char, QString > mapper;
 
@@ -1800,7 +1823,7 @@ QByteArray StringHelper::ConvertISO8859_1ToUTF8(const QByteArray mcText)
     }
 
     // 0x80 to 0x9F are not used in ISO-8859-1
-    
+
     // 0xA0 to 0xFF - translated
     mapper[0xA0] = "&nbsp;";
     mapper[0xA1] = QString("%1").arg(QChar(0xc2a0)); // Inverted exclamation point
@@ -1852,7 +1875,7 @@ QByteArray StringHelper::ConvertISO8859_1ToUTF8(const QByteArray mcText)
     mapper[0xCD] = QString("%1").arg(QChar(0xC38D)); // I aute
     mapper[0xCE] = QString("%1").arg(QChar(0xC38E)); // I circumflex
     mapper[0xCF] = QString("%1").arg(QChar(0xC38F)); // I umlaut
-    
+
     mapper[0xD0] = QString("%1").arg(QChar(0xC390)); // ETH
     mapper[0xD1] = QString("%1").arg(QChar(0xC391)); // N tilde
     mapper[0xD2] = QString("%1").arg(QChar(0xC392)); // O grave
@@ -1860,7 +1883,7 @@ QByteArray StringHelper::ConvertISO8859_1ToUTF8(const QByteArray mcText)
     mapper[0xD4] = QString("%1").arg(QChar(0xC394)); // O circumflex
     mapper[0xD5] = QString("%1").arg(QChar(0xC395)); // O tilde
     mapper[0xD6] = QString("%1").arg(QChar(0xC396)); // O umlaut
-    mapper[0xD7] = "&times;"; // Multiplication sign 
+    mapper[0xD7] = "&times;"; // Multiplication sign
     mapper[0xD8] = QString("%1").arg(QChar(0xC398)); // O slash
     mapper[0xD9] = QString("%1").arg(QChar(0xC399)); // U grave
     mapper[0xDA] = QString("%1").arg(QChar(0xC39A)); // U acute
@@ -1869,7 +1892,7 @@ QByteArray StringHelper::ConvertISO8859_1ToUTF8(const QByteArray mcText)
     mapper[0xDD] = QString("%1").arg(QChar(0xC39D)); // Y acute
     mapper[0xDE] = QString("%1").arg(QChar(0xC39E)); // THORN
     mapper[0xDF] = QString("%1").arg(QChar(0xC39F)); // sharp s
-    
+
     mapper[0xE0] = QString("%1").arg(QChar(0xC3A0)); // a grave
     mapper[0xE1] = QString("%1").arg(QChar(0xC3A1)); // a acute
     mapper[0xE2] = QString("%1").arg(QChar(0xC3A2)); // a circumflex
@@ -1886,7 +1909,7 @@ QByteArray StringHelper::ConvertISO8859_1ToUTF8(const QByteArray mcText)
     mapper[0xED] = QString("%1").arg(QChar(0xC3AD)); // i aute
     mapper[0xEE] = QString("%1").arg(QChar(0xC3AE)); // i circumflex
     mapper[0xEF] = QString("%1").arg(QChar(0xC3AF)); // i umlaut
-    
+
     mapper[0xF0] = QString("%1").arg(QChar(0xC3B0)); // eth
     mapper[0xF1] = QString("%1").arg(QChar(0xC3B1)); // n tilde
     mapper[0xF2] = QString("%1").arg(QChar(0xC3B2)); // o grave
@@ -1894,7 +1917,7 @@ QByteArray StringHelper::ConvertISO8859_1ToUTF8(const QByteArray mcText)
     mapper[0xF4] = QString("%1").arg(QChar(0xC3B4)); // o circumflex
     mapper[0xF5] = QString("%1").arg(QChar(0xC3B5)); // o tilde
     mapper[0xF6] = QString("%1").arg(QChar(0xC3B6)); // o umlaut
-    mapper[0xF7] = "&divide;"; // Division sign 
+    mapper[0xF7] = "&divide;"; // Division sign
     mapper[0xF8] = QString("%1").arg(QChar(0xC3B8)); // o slash
     mapper[0xF9] = QString("%1").arg(QChar(0xC3B9)); // u grave
     mapper[0xFA] = QString("%1").arg(QChar(0xC3BA)); // u acute
@@ -1924,7 +1947,7 @@ QByteArray StringHelper::ConvertISO8859_1ToUTF8(const QByteArray mcText)
             ret += QString("[untranslated]%1").arg(mcText.at(idx)).toUtf8();
         }
     }
-    
+
     // Done
     CALL_OUT("");
     return ret;
@@ -1941,7 +1964,7 @@ QByteArray StringHelper::ConvertISO8859_2ToISO8859_1(const QByteArray mcText)
 
     // From https://github.com/sebkirche/pbniregex/blob/master/stuff/
     //      CP1252%20%20%20ISO-8859-1%20%20%20UTF-8%20Conversion%20Chart.htm
-    
+
     // Create character mapper
     QHash < unsigned char, QString > mapper;
 
@@ -1954,7 +1977,7 @@ QByteArray StringHelper::ConvertISO8859_2ToISO8859_1(const QByteArray mcText)
     }
 
     // 0x80 to 0x9F are not used in ISO-8859-2
-    
+
     // 0xA0 to 0xFF - mapped
     mapper[0xA0] = "&nbsp;";    // Non-breakable space
     mapper[0xA1] = "&Aogon;";   // latin capital letter A with ogonek
@@ -1989,7 +2012,7 @@ QByteArray StringHelper::ConvertISO8859_2ToISO8859_1(const QByteArray mcText)
     mapper[0xBD] = "&dblac;";   // double acute accent
     mapper[0xBE] = "&zcaron;";  // latin small letter z with caron
     mapper[0xBF] = "&zdot;";    // latin small letter z with dot above
-    
+
     mapper[0xC0] = "&Racute;";  // latin capital letter R with acute
     mapper[0xC1] = "&Aacute;";  // latin capital letter A with acute
     mapper[0xC2] = "&Acric;";   // latin capital letter A with circumflex
@@ -2006,7 +2029,7 @@ QByteArray StringHelper::ConvertISO8859_2ToISO8859_1(const QByteArray mcText)
     mapper[0xCD] = "&Iacute;";  // latin capital letter I with acute
     mapper[0xCE] = "&Icirc;";   // latin capital letter I with circumflex
     mapper[0xCF] = "&Dcaron;";  // latin capital letter D with caron
-    
+
     mapper[0xD0] = "&Dstrok;";  // latin capital letter D with stroke
     mapper[0xD1] = "&Nacute;";  // latin capital letter N with acute
     mapper[0xD2] = "&Ncaron;";  // latin capital letter N with caron
@@ -2023,7 +2046,7 @@ QByteArray StringHelper::ConvertISO8859_2ToISO8859_1(const QByteArray mcText)
     mapper[0xDD] = "&Yacute;";  // latin capital letter Y with acute
     mapper[0xDE] = "&Tcedil;";  // latin capital letter T with cedilla
     mapper[0xDF] = "&szlig;";   // latin small letter sharp s
-    
+
     mapper[0xE0] = "&racute;";  // latin small letter r with acute
     mapper[0xE1] = "&aacute;";  // latin small letter a with acute
     mapper[0xE2] = "&acirc;";   // latin small letter a with circumflex
@@ -2040,7 +2063,7 @@ QByteArray StringHelper::ConvertISO8859_2ToISO8859_1(const QByteArray mcText)
     mapper[0xED] = "&iacute;";  // latin small letter i with acute
     mapper[0xEE] = "&icirc;";   // latin small letter i with circumflex
     mapper[0xEF] = "&dcaron;";  // latin small letter d with caron
-    
+
     mapper[0xF0] = "&dstrok;";  // latin small letter d with stroke
     mapper[0xF1] = "&nacute;";  // latin small letter n with acute
     mapper[0xF2] = "&ncaron;";  // latin small letter n with caron
@@ -2078,7 +2101,7 @@ QByteArray StringHelper::ConvertISO8859_2ToISO8859_1(const QByteArray mcText)
             ret += QString("[untranslated]%1").arg(mcText.at(idx)).toUtf8();
         }
     }
-    
+
     // Done
     CALL_OUT("");
     return ret;
@@ -2110,7 +2133,7 @@ QByteArray StringHelper::ConvertISO8859_15ToISO8859_1(const QByteArray mcText)
 
     // From https://github.com/sebkirche/pbniregex/blob/master/stuff/
     //      CP1252%20%20%20ISO-8859-1%20%20%20UTF-8%20Conversion%20Chart.htm
-    
+
     // Create character mapper
     QHash < unsigned char, QString > mapper;
 
@@ -2123,7 +2146,7 @@ QByteArray StringHelper::ConvertISO8859_15ToISO8859_1(const QByteArray mcText)
     }
 
     // 0x80 to 0x9F are not used in ISO-8859-15
-    
+
     // 0xA0 to 0xFF - same with exceptions
     // (need to use "int" in the loop below because in unsigned ints, (255)++
     // is zero, and the loop would run forever)
@@ -2163,7 +2186,7 @@ QByteArray StringHelper::ConvertISO8859_15ToISO8859_1(const QByteArray mcText)
             ret += QString("[untranslated]%1").arg(mcText.at(idx)).toUtf8();
         }
     }
-    
+
     // Done
     CALL_OUT("");
     return ret;
@@ -2194,7 +2217,7 @@ QByteArray StringHelper::ConvertRoman8ToISO8859_1(const QByteArray mcText)
         .arg(CALL_SHOW(mcText)));
 
     // https://en.wikipedia.org/wiki/HP_Roman
-    
+
     // Create character mapper
     QHash < unsigned char, QString > mapper;
 
@@ -2213,7 +2236,7 @@ QByteArray StringHelper::ConvertRoman8ToISO8859_1(const QByteArray mcText)
     {
         mapper[character] = QString();
     }
-    
+
     // 0xA0 to 0xFF - mapped
     mapper[0xA0] = "&nbsp;";    // Non-breakable space
     mapper[0xA1] = QString("%1").arg((char)0xC0);    // A grave
@@ -2337,7 +2360,7 @@ QByteArray StringHelper::ConvertRoman8ToISO8859_1(const QByteArray mcText)
             ret += QString("[untranslated]%1").arg(mcText.at(idx)).toUtf8();
         }
     }
-    
+
     // Done
     CALL_OUT("");
     return ret;
@@ -2369,7 +2392,7 @@ QByteArray StringHelper::ConvertWindows1252ToISO8859_1(const QByteArray mcText)
 
     // Create character mapper
     QHash < unsigned char, QString > mapper;
-    
+
     // Keep identical for 0x00 to 0x7f
     for (unsigned char character = 0x00;
         character <= 0x7F;
@@ -2377,7 +2400,7 @@ QByteArray StringHelper::ConvertWindows1252ToISO8859_1(const QByteArray mcText)
     {
         mapper[character] = QString("%1").arg((char)character);
     }
-    
+
     // 0x80 to 0x9F are specific to Windows-1252
     mapper[0x80] = "&euro;";    // Euro sign
     // 0x81 not used
@@ -2395,7 +2418,7 @@ QByteArray StringHelper::ConvertWindows1252ToISO8859_1(const QByteArray mcText)
     // 0x8D not used
     mapper[0x8E] = "&Zcaron;";   // Latin capital Z w/ caron
     // 0x8F not used
-    
+
     // 0x90 not used
     mapper[0x91] = "&lsquo;";   // left single quotation mark
     mapper[0x92] = "&rsquo;";   // right single quotation mark
@@ -2422,7 +2445,7 @@ QByteArray StringHelper::ConvertWindows1252ToISO8859_1(const QByteArray mcText)
     {
         mapper[(unsigned int)character] = QString("%1").arg((char)character);
     }
-    
+
     // Map
     QByteArray ret;
     for (int idx = 0; mcText.at(idx) != '\0'; idx++)
@@ -2441,7 +2464,7 @@ QByteArray StringHelper::ConvertWindows1252ToISO8859_1(const QByteArray mcText)
             ret += QString("[untranslated]%1").arg(mcText.at(idx)).toUtf8();
         }
     }
-    
+
     // Done
     CALL_OUT("");
     return ret;
@@ -2458,7 +2481,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
 
     // Create character mapper
     QHash < unsigned char, QString > mapper;
-    
+
     // Keep identical for 0x00 to 0x7f
     for (unsigned char character = 0x00;
         character <= 0x7F;
@@ -2466,7 +2489,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     {
         mapper[character] = QString("%1").arg(QChar(character));
     }
-    
+
     // 0x80 to 0x9F are specific to Windows-1252
     mapper[0x80] = "&euro;";    // Euro sign
     // 0x81 not used
@@ -2484,7 +2507,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     // 0x8D not used
     mapper[0x8E] = QString("%1").arg(QChar(0xC5BD)); // Latin capital Z w/ caron
     // 0x8F not used
-    
+
     // 0x90 not used
     mapper[0x91] = "&lsquo;";   // left single quotation mark
     mapper[0x92] = "&rsquo;";   // right single quotation mark
@@ -2501,7 +2524,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     // 0x9D not used
     mapper[0x9E] = QString("%1").arg(QChar(0xC5BE)); // Latin small z with caron
     mapper[0x9F] = QString("%1").arg(QChar(0xC5B8)); // Latin capital Y w/ diaeresis
-    
+
     // 0xA0 to 0xFF - translated
     mapper[0xA0] = "&nbsp;";
     mapper[0xA1] = QString("%1").arg(QChar(0xc2a0));   // Inverted exclamation point
@@ -2553,7 +2576,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     mapper[0xCD] = QString("%1").arg(QChar(0xC38D)); // I aute
     mapper[0xCE] = QString("%1").arg(QChar(0xC38E)); // I circumflex
     mapper[0xCF] = QString("%1").arg(QChar(0xC38F)); // I umlaut
-    
+
     mapper[0xD0] = QString("%1").arg(QChar(0xC390)); // ETH
     mapper[0xD1] = QString("%1").arg(QChar(0xC391)); // N tilde
     mapper[0xD2] = QString("%1").arg(QChar(0xC392)); // O grave
@@ -2561,7 +2584,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     mapper[0xD4] = QString("%1").arg(QChar(0xC394)); // O circumflex
     mapper[0xD5] = QString("%1").arg(QChar(0xC395)); // O tilde
     mapper[0xD6] = QString("%1").arg(QChar(0xC396)); // O umlaut
-    mapper[0xD7] = "&times;"; // Multiplication sign 
+    mapper[0xD7] = "&times;"; // Multiplication sign
     mapper[0xD8] = QString("%1").arg(QChar(0xC398)); // O slash
     mapper[0xD9] = QString("%1").arg(QChar(0xC399)); // U grave
     mapper[0xDA] = QString("%1").arg(QChar(0xC39A)); // U acute
@@ -2570,7 +2593,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     mapper[0xDD] = QString("%1").arg(QChar(0xC39D)); // Y acute
     mapper[0xDE] = QString("%1").arg(QChar(0xC39E)); // THORN
     mapper[0xDF] = QString("%1").arg(QChar(0xC39F)); // sharp s
-    
+
     mapper[0xE0] = QString("%1").arg(QChar(0xC3A0)); // a grave
     mapper[0xE1] = QString("%1").arg(QChar(0xC3A1)); // a acute
     mapper[0xE2] = QString("%1").arg(QChar(0xC3A2)); // a circumflex
@@ -2587,7 +2610,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     mapper[0xED] = QString("%1").arg(QChar(0xC3AD)); // i aute
     mapper[0xEE] = QString("%1").arg(QChar(0xC3AE)); // i circumflex
     mapper[0xEF] = QString("%1").arg(QChar(0xC3AF)); // i umlaut
-    
+
     mapper[0xF0] = QString("%1").arg(QChar(0xC3B0)); // eth
     mapper[0xF1] = QString("%1").arg(QChar(0xC3B1)); // n tilde
     mapper[0xF2] = QString("%1").arg(QChar(0xC3B2)); // o grave
@@ -2595,7 +2618,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     mapper[0xF4] = QString("%1").arg(QChar(0xC3B4)); // o circumflex
     mapper[0xF5] = QString("%1").arg(QChar(0xC3B5)); // o tilde
     mapper[0xF6] = QString("%1").arg(QChar(0xC3B6)); // o umlaut
-    mapper[0xF7] = "&divide;"; // Division sign 
+    mapper[0xF7] = "&divide;"; // Division sign
     mapper[0xF8] = QString("%1").arg(QChar(0xC3B8)); // o slash
     mapper[0xF9] = QString("%1").arg(QChar(0xC3B9)); // u grave
     mapper[0xFA] = QString("%1").arg(QChar(0xC3BA)); // u acute
@@ -2604,7 +2627,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
     mapper[0xFD] = QString("%1").arg(QChar(0xC3BD)); // y acute
     mapper[0xFE] = QString("%1").arg(QChar(0xC3BE)); // thorn
     mapper[0xFF] = QString("%1").arg(QChar(0xC3BF)); // y umlaut
-    
+
     // Map
     QByteArray ret;
     for (int idx = 0; mcText.at(idx) != '\0'; idx++)
@@ -2623,7 +2646,7 @@ QByteArray StringHelper::ConvertWindows1252ToUTF8(const QByteArray mcText)
             ret += QString("[untranslated]%1").arg(mcText.at(idx)).toUtf8();
         }
     }
-    
+
     // Done
     CALL_OUT("");
     return ret;
@@ -2649,8 +2672,8 @@ QString StringHelper::MarkSearchword(const QString mcText,
         return mcText;
     }
     const int size = mcSearchText.size();
-    
-    // Splitting is case-insensitive, but we preserve the original case 
+
+    // Splitting is case-insensitive, but we preserve the original case
     // in the text that we display
     const QStringList parts = mcText.toLower().split(mcSearchText.toLower());
     int pos = 0;

@@ -23,17 +23,17 @@ class StringHelper :
     public QObject
 {
     Q_OBJECT
-    
-    
-    
+
+
+
     // ============================================================== Lifecycle
 private:
-	// Default constructor (never to be called from outside)
-	StringHelper();
+    // Default constructor (never to be called from outside)
+    StringHelper();
 
 public:
-	// Destructor
-	~StringHelper();
+    // Destructor
+    ~StringHelper();
 
 
 
@@ -56,6 +56,9 @@ public:
     static QList < QString > SortHash(const QHash < QString, QString > mcHash);
     static QList < QString > SortHash(const QHash < QString, int > mcHash);
 
+    // Sort and return indexes
+    static QList < int > SortAndReturnIndex(const QStringList & mcrData);
+
     // Compare Strings but keep ID with it
     static bool LessThan_IntString(const QPair < int, QString > mcLeft,
         const QPair < int, QString > mcRight);
@@ -63,23 +66,23 @@ public:
         const QPair < int, QString > mcRight);
 
     // Compare Strings but keep ID with it
-    static bool LessThan_StringString(const QPair < QString, QString > mcLeft, 
+    static bool LessThan_StringString(const QPair < QString, QString > mcLeft,
         const QPair < QString, QString > mcRight);
 
     // Compare Strings but keep ID with it
-    static bool LessThan_StringInt(const QPair < QString, int > mcLeft, 
+    static bool LessThan_StringInt(const QPair < QString, int > mcLeft,
         const QPair < QString, int > mcRight);
 
     // Compare ints but keep ID with it
-    static bool LessThan_IntInt(const QPair < int, int > mcLeft, 
+    static bool LessThan_IntInt(const QPair < int, int > mcLeft,
         const QPair < int, int > mcRight);
 
     // Compare doubles but keep ID with it
-    static bool LessThan_IntDouble(const QPair < int, double > mcLeft, 
+    static bool LessThan_IntDouble(const QPair < int, double > mcLeft,
         const QPair < int, double > mcRight);
 
     // Compare dates but keep ID with it
-    static bool LessThan_IntDate(const QPair < int, QString > mcLeft, 
+    static bool LessThan_IntDate(const QPair < int, QString > mcLeft,
         const QPair < int, QString > mcRight);
 
     // Compare Strings with natural order
@@ -89,25 +92,25 @@ public:
         const QString mcRight);
 
     // Compare shutter times
-    static bool LessThan_ShutterTime(const QString mcLeft, 
+    static bool LessThan_ShutterTime(const QString mcLeft,
         const QString mcRight);
-    static bool GreaterThan_ShutterTime(const QString mcLeft, 
+    static bool GreaterThan_ShutterTime(const QString mcLeft,
         const QString mcRight);
 
     // Compare biases
-    static bool LessThan_Bias(const QString mcLeft, 
+    static bool LessThan_Bias(const QString mcLeft,
         const QString mcRight);
-    static bool GreaterThan_Bias(const QString mcLeft, 
+    static bool GreaterThan_Bias(const QString mcLeft,
         const QString mcRight);
-    
+
     // Compare F stops
-    static bool LessThan_FStop(const QString mcLeft, 
+    static bool LessThan_FStop(const QString mcLeft,
         const QString mcRight);
-    static bool GreaterThan_FStop(const QString mcLeft, 
+    static bool GreaterThan_FStop(const QString mcLeft,
         const QString mcRight);
-    
-    
-    
+
+
+
     // =================================================================== Misc
 public:
     // Split filename into directory and filename.
@@ -123,7 +126,7 @@ public:
     // Split text into words, taking quotes into account
     // (a "b c") => ("a", "b c")
     static QStringList SplitQuotedText(const QString mcText);
-    
+
     // Convert file size
     static QString ConvertFileSize(const qint64 mcFileSize,
         const QString mcTargetScale = "automatic");
@@ -133,52 +136,52 @@ public:
 
     // Get portion bounded by brackets "([{" or quotes till the last closes.
     static QString GetBracketedPortion(QString & mrText);
-    
+
     // Natural language lists
     static QString NaturalLanguageList(const QStringList mcList);
-    
+
     // Decode encoded string, convert charset
     static QByteArray DecodeText(const QByteArray mcBody,
         const QString mcCharset, const QString mcTransferEncoding);
-    
+
     // Guess charset from text
     static QString GuessCharset(const QByteArray mcText);
-    
+
     // Escape non-ASCII characters (usually for debugging purposes)
     static QString EscapeNonAscii(const QByteArray mcText);
-    
+
     // Convert ISO-8859-1 binary representation to UTF-8
     static QByteArray ConvertISO8859_1ToUTF8(const QByteArray mcText);
-    
+
     // Convert ISO-8859-2 binary representation to ISO-8859-1
     static QByteArray ConvertISO8859_2ToISO8859_1(const QByteArray mcText);
-    
+
     // Convert ISO-8859-2 binary representation to UTF-8
     static QByteArray ConvertISO8859_2ToUTF8(const QByteArray mcText);
 
     // Convert ISO-8859-15 binary representation to ISO-8859-1
     static QByteArray ConvertISO8859_15ToISO8859_1(const QByteArray mcText);
-    
+
     // Convert ISO-8859-15 binary representation to UTF-8
     static QByteArray ConvertISO8859_15ToUTF8(const QByteArray mcText);
-    
+
     // Convert Roman-8 (binary, unquoted representation) to ISO-8859-1
     static QByteArray ConvertRoman8ToISO8859_1(const QByteArray mcText);
-    
+
     // Convert UTF-8 binary representation to ISO-8859-1
     static QByteArray ConvertUTF8ToISO8859_1(const QByteArray mcText);
 
     // Convert Windows-1252 binary representation to ISO-8859-1
     static QByteArray ConvertWindows1252ToISO8859_1(const QByteArray mcText);
-    
+
     // Convert Windows-1252 binary representation to UTF-8
     static QByteArray ConvertWindows1252ToUTF8(const QByteArray mcText);
-    
+
     // Mark search text
-    static QString MarkSearchword(const QString mcText, 
+    static QString MarkSearchword(const QString mcText,
         const QString mcSearchText, const QString mcColor = "FF0000",
         const QString mcBgColor = "FFFF00");
-    
+
     // Month to name
     static QString MonthName(const int mcNumber);
 
