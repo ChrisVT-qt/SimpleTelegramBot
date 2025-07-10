@@ -182,9 +182,10 @@ void MainWindow::UpdateStatus()
     TelegramComms * tc = TelegramComms::Instance();
     const int queue_size = tc -> GetDownloadWorkListSize();
     const int num_stickersets = tc -> GetAllStickerSetNames().size();
-    const QString text = tr("Download queue: %1 files, %2 sticker sets")
-        .arg(QString::number(queue_size),
-             QString::number(num_stickersets));
+    const QString text =
+        tr("Download queue: %1 files. Database: %2 sticker sets")
+            .arg(QString::number(queue_size),
+                 QString::number(num_stickersets));
     m_Status -> setText(text);
 
     // See you again in 2s
@@ -207,7 +208,7 @@ void MainWindow::GracefullyShutDown()
 
     // Let all chats know
     const QString message =
-        tr("Bot will shutdown after current acticities have been completed.");
+        tr("Bot will shut down after current activities have been completed.");
     TelegramComms * tc = TelegramComms::Instance();
     tc -> SendBroadcastMessage(message);
 
@@ -1484,7 +1485,22 @@ void MainWindow::Command_Start(const qint64 mcUserID,
              CALL_SHOW(mcMessageID),
              CALL_SHOW(mcrParameters)));
 
-    // !!!
+    // Get user details
+    TelegramComms * tc = TelegramComms::Instance();
+    const QHash < QString, QString > user_info = tc -> GetUserInfo(mcUserID);
+
+    TelegramHelper * th = TelegramHelper::Instance();
+    const QString message = tr("Welcome, %1! I'm ShimaronBot and will be "
+        "happy to assist you with anything that in my power!\n"
+        "As of right now, my power is rather limited, however: I can "
+        "to things with sticker sets, like download them, create pictures "
+        "with the entire set, or even give you an overview over all the "
+        "sticker sets that have been downloaded so far.\n"
+        "Please try /help to get an overview of the available commands "
+        "and how they work.\n"
+        "Have fun!")
+        .arg(user_info["first_name"]);
+    th -> SendMessage(mcChatID, message);
 
     CALL_OUT("");
 }

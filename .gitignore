@@ -10,3 +10,4 @@ src/Config.h
 make_backup
 Tasks.txt
 *.user
+/material
