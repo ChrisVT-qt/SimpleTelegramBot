@@ -53,8 +53,9 @@ TelegramComms::TelegramComms()
     CALL_IN("");
 
     // Default preferences (also defined valid preference tags)
-    m_DefaultPreferences["provide_sticker_set"] = "always";
     m_DefaultPreferences["greedy"] = "no";
+    m_DefaultPreferences["provide_sticker_set"] = "always";
+    m_DefaultPreferences["silent"] = "no";
 
     // Create some directories
     QDir dir("/");
@@ -3482,12 +3483,46 @@ QStringList TelegramComms::GetAllStickerSetNames() const
 {
     CALL_IN("");
 
-    QStringList sorted_set_names(m_StickerSetNameToInfo.keyBegin(),
-        m_StickerSetNameToInfo.keyEnd());
-    std::sort(sorted_set_names.begin(), sorted_set_names.end());
+    QHash < QString, QString > sort_hash;
+    for (auto name_iterator = m_StickerSetNameToInfo.keyBegin();
+         name_iterator != m_StickerSetNameToInfo.keyEnd();
+         name_iterator++)
+    {
+        const QString set_name = *name_iterator;
+        sort_hash[set_name] = set_name.toLower();
+    }
+    const QStringList sorted_names = StringHelper::SortHash(sort_hash);
 
     CALL_OUT("");
-    return sorted_set_names;
+    return sorted_names;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Remove existing sticker set info
+bool TelegramComms::RemoveStickerSetInfo(const QString & mcrStickerSetName)
+{
+    CALL_IN(QString("mcrStickerSetName=%1")
+        .arg(CALL_SHOW(mcrStickerSetName)));
+
+    // Check if we know this sticker set
+    if (!m_StickerSetNameToInfo.contains(mcrStickerSetName))
+    {
+        // Nope
+        const QString reason = tr("Unknown sticker set \"%1\".")
+            .arg(mcrStickerSetName);
+        MessageLogger::Error(CALL_METHOD, reason);
+        CALL_OUT(reason);
+        return false;
+    }
+
+    // Remove sticker set
+    m_StickerSetNameToInfo.remove(mcrStickerSetName);
+    m_StickerSetNameToFileIDs.remove(mcrStickerSetName);
+
+    CALL_OUT("");
+    return true;
 }
 
 
@@ -3500,7 +3535,7 @@ QHash < QString, QString > TelegramComms::GetStickerSetInfo(
     CALL_IN(QString("mcrStickerSetName=%1")
         .arg(CALL_SHOW(mcrStickerSetName)));
 
-    // Check if we know this sticker ste
+    // Check if we know this sticker set
     if (!m_StickerSetNameToInfo.contains(mcrStickerSetName))
     {
         // Nope

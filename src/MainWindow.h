@@ -100,7 +100,7 @@ private:
     void SeparateCommand_StickerSet(const qint64 mcUserID,
         const qint64 mcChatID, const qint64 mcForwardedMessageID);
     void DownloadNewStickerSet(const qint64 mcUserID, const qint64 mcChatID,
-        const QString & mcrStickerSetName);
+        const QString & mcrStickerSetName, const bool mcForce = false);
 
     QHash < QString, QList < qint64 > > m_StickerSetNameToChatIDs;
     QHash < QString, QList < qint64 > > m_StickerSetNameToUserIDs;
@@ -114,13 +114,13 @@ private:
     // == Command /contactsheets
     void Command_ContactSheets(const qint64 mcUserID, const qint64 mcChatID,
         const qint64 mcMessageID, const QString & mcrParameters);
-    void Command_ContactSheets_AllSets(const qint64 mcChatID,
+    void Command_ContactSheets_AllSets(const qint64 mcUserID,
+        const qint64 mcChatID, const int mcRows, const int mcColumns);
+    void Command_ContactSheets_SingleSet(const qint64 mcUserID,
+        const qint64 mcChatID, const QString & mcrStickerSetName,
         const int mcRows, const int mcColumns);
-    void Command_ContactSheets_SingleSet(const qint64 mcChatID,
-        const QString & mcrStickerSetName, const int mcRows,
-        const int mcColumns);
-    void Command_ContactSheets_Render(const qint64 mcChatID,
-        const int mcRows, const int mcColumns,
+    void Command_ContactSheets_Render(const qint64 mcUserID,
+        const qint64 mcChatID, const int mcRows, const int mcColumns,
         const QStringList & mcrStickerNames);
 
 

@@ -80,7 +80,8 @@ public:
     bool IsStickerSetBeingDownloaded(const QString & mcrStickerSetName) const;
 
     // Download an entire sticker set
-    void DownloadStickerSet(const QString & mcrStickerSetName);
+    void DownloadStickerSet(const QString & mcrStickerSetName,
+        const bool mcForce = false);
 private:
     QSet < QString > m_StickerSetIsDownloading;
 private slots:

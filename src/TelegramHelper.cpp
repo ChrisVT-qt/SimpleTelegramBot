@@ -322,13 +322,16 @@ bool TelegramHelper::IsStickerSetBeingDownloaded(
 
 ///////////////////////////////////////////////////////////////////////////////
 // Download an entire sticker set
-void TelegramHelper::DownloadStickerSet(const QString & mcrStickerSetName)
+void TelegramHelper::DownloadStickerSet(const QString & mcrStickerSetName,
+    const bool mcForce)
 {
-    CALL_IN(QString("mcrStickerSetName=%1")
-        .arg(CALL_SHOW(mcrStickerSetName)));
+    CALL_IN(QString("mcrStickerSetName=%1, mcForce=%2")
+        .arg(CALL_SHOW(mcrStickerSetName),
+             CALL_SHOW(mcForce)));
 
     // (1) Add flag that we're downloading this sticker set, so the other
     //     methods receiving updates know to go here.
+    //     Remove existing sticker set info if we force reload
     //
     // (2) If no sticker set info is available for this sticker set, get it.
     //     This will also generate file infos for all stickers
@@ -343,14 +346,18 @@ void TelegramHelper::DownloadStickerSet(const QString & mcrStickerSetName)
 
     // (1) Add flag that we're downloading this sticker set, so the other
     //     methods receiving updates know to go here.
+    TelegramComms * tc = TelegramComms::Instance();
     if (!m_StickerSetIsDownloading.contains(mcrStickerSetName))
     {
         m_StickerSetIsDownloading += mcrStickerSetName;
+        if (mcForce)
+        {
+            tc -> RemoveStickerSetInfo(mcrStickerSetName);
+        }
     }
 
     // (2) If no sticker set info is available for this sticker set, get it.
     //     This will also generate file infos for all stickers
-    TelegramComms * tc = TelegramComms::Instance();
     if (!tc -> DoesStickerSetInfoExist(mcrStickerSetName))
     {
         // Download detaches

@@ -241,6 +241,7 @@ private:
 public:
     QStringList GetAllStickerSetNames() const;
     bool DoesStickerSetInfoExist(const QString & mcrStickerSetName) const;
+    bool RemoveStickerSetInfo(const QString & mcrStickerSetName);
     QHash < QString, QString > GetStickerSetInfo(
         const QString & mcrStickerSetName) const;
     QStringList GetStickerSetFileIDs(const QString & mcrStickerSetName) const;

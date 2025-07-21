@@ -518,7 +518,11 @@ void MainWindow::CommandReceived(const qint64 mcUserID, const qint64 mcChatID,
     {
         TelegramComms * tc = TelegramComms::Instance();
         const QString message = tr("Bot is shutting down - command ignored.");
-        tc -> SendMessage(mcChatID, message);
+        const QString is_silent = tc -> GetPreferenceValue(mcUserID, "silent");
+        if (is_silent == "no")
+        {
+            tc -> SendMessage(mcChatID, message);
+        }
         CALL_OUT("");
         return;
     }
@@ -714,6 +718,7 @@ void MainWindow::Command_Help(const qint64 mcUserID, const qint64 mcChatID,
     }
 
     // Send message
+    // (not suppressed when "silent" is set to "yes")
     tc -> SendMessage(mcChatID, message);
 
     CALL_OUT("");
@@ -739,6 +744,7 @@ void MainWindow::Command_StickerSet(const qint64 mcUserID,
 
     // Obtain sticker set name
     QString sticker_set_name;
+    bool force = false;
     while (true)
     {
         // ==== /stickerset in a forwarded message containing a sticker
@@ -754,22 +760,25 @@ void MainWindow::Command_StickerSet(const qint64 mcUserID,
 
         // ==== /stickerset https://t.me/addstickers/name
         static const QRegularExpression format_by_link(
-            "^https://t.me/addstickers/(.+)$");
+            "^https://t.me/addstickers/([^ ]+)( force)?$");
         const QRegularExpressionMatch match_by_link =
             format_by_link.match(mcrParameters);
         if (match_by_link.hasMatch())
         {
             sticker_set_name = match_by_link.captured(1);
+            force = !match_by_link.captured(2).isEmpty();
             break;
         }
 
         // === /stickerset name
-        static const QRegularExpression format_by_name("^([a-zA-Z0-9_]+)$");
+        static const QRegularExpression format_by_name(
+            "^([a-zA-Z0-9_]+)( force)?$");
         const QRegularExpressionMatch match_by_name =
             format_by_name.match(mcrParameters);
         if (match_by_name.hasMatch())
         {
             sticker_set_name = match_by_name.captured(1);
+            force = !match_by_name.captured(2).isEmpty();
             break;
         }
 
@@ -783,7 +792,7 @@ void MainWindow::Command_StickerSet(const qint64 mcUserID,
     }
 
     // Get sticker set
-    DownloadNewStickerSet(mcUserID, mcChatID, sticker_set_name);
+    DownloadNewStickerSet(mcUserID, mcChatID, sticker_set_name, force);
 
     CALL_OUT("");
 }
@@ -838,12 +847,15 @@ void MainWindow::SeparateCommand_StickerSet(const qint64 mcUserID,
 ///////////////////////////////////////////////////////////////////////////////
 // Download a sticker set if we haven't done so yet
 void MainWindow::DownloadNewStickerSet(const qint64 mcUserID,
-    const qint64 mcChatID, const QString & mcrStickerSetName)
+    const qint64 mcChatID, const QString & mcrStickerSetName,
+    const bool mcForce)
 {
-    CALL_IN(QString("mcUserID=%1, mcChatID=%2, mcrStickerSetName=%3")
+    CALL_IN(QString("mcUserID=%1, mcChatID=%2, mcrStickerSetName=%3, "
+        "mcForce=%4")
         .arg(CALL_SHOW(mcUserID),
              CALL_SHOW(mcChatID),
-             CALL_SHOW(mcrStickerSetName)));
+             CALL_SHOW(mcrStickerSetName),
+             CALL_SHOW(mcForce)));
 
     // Check if sticker set is already being downloaded
     TelegramHelper * th = TelegramHelper::Instance();
@@ -858,7 +870,7 @@ void MainWindow::DownloadNewStickerSet(const qint64 mcUserID,
     {
         m_StickerSetNameToUserIDs[mcrStickerSetName] += mcUserID;
         m_StickerSetNameToChatIDs[mcrStickerSetName] += mcChatID;
-        th -> DownloadStickerSet(mcrStickerSetName);
+        th -> DownloadStickerSet(mcrStickerSetName, mcForce);
     }
 
     CALL_OUT("");
@@ -892,12 +904,16 @@ void MainWindow::StickerSetReceived(const QString & mcrStickerSetName)
 
         const QString action =
             tc -> GetPreferenceValue(user_id, "provide_sticker_set");
+        const QString is_silent = tc -> GetPreferenceValue(user_id, "silent");
         if (action == "never")
         {
             // Do nothing
             const QString message = tr("Sticker set \"%1\" was downloaded.")
                 .arg(mcrStickerSetName);
-            tc -> SendMessage(chat_id, message);
+            if (is_silent == "no")
+            {
+                tc -> SendMessage(chat_id, message);
+            }
         } else if (action == "once" &&
                    m_StickerSetNameHasBeenSentToUserIDs[mcrStickerSetName]
                         .contains(user_id))
@@ -906,7 +922,10 @@ void MainWindow::StickerSetReceived(const QString & mcrStickerSetName)
             const QString message =
                 tr("Sticker set \"%1\" has been sent to you before.")
                     .arg(mcrStickerSetName);
-            tc -> SendMessage(chat_id, message);
+            if (is_silent == "no")
+            {
+                tc -> SendMessage(chat_id, message);
+            }
         } else
         {
             // Filename
@@ -962,6 +981,7 @@ void MainWindow::StickerSetInfoFailed(const QString & mcrStickerSetName)
 }
 
 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Command /contactsheets
 void MainWindow::Command_ContactSheets(const qint64 mcUserID,
@@ -1012,11 +1032,12 @@ void MainWindow::Command_ContactSheets(const qint64 mcUserID,
     if (set_name == "all")
     {
         // All sets overview
-        Command_ContactSheets_AllSets(mcChatID, rows, columns);
+        Command_ContactSheets_AllSets(mcUserID, mcChatID, rows, columns);
     } else
     {
         // Single set
-        Command_ContactSheets_SingleSet(mcChatID, set_name, rows, columns);
+        Command_ContactSheets_SingleSet(mcUserID, mcChatID, set_name, rows,
+            columns);
     }
 
     CALL_OUT("");
@@ -1027,11 +1048,12 @@ void MainWindow::Command_ContactSheets(const qint64 mcUserID,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Contact sheet: all sets
-void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
-    const int mcRows, const int mcColumns)
+void MainWindow::Command_ContactSheets_AllSets(const qint64 mcUserID,
+    const qint64 mcChatID, const int mcRows, const int mcColumns)
 {
-    CALL_IN(QString("mcChatID=%1, mcRows=%2, mcColumns=%3")
-        .arg(CALL_SHOW(mcChatID),
+    CALL_IN(QString("mcUserID=%1, mcChatID=%2, mcRows=%3, mcColumns=%4")
+        .arg(CALL_SHOW(mcUserID),
+             CALL_SHOW(mcChatID),
              CALL_SHOW(mcRows),
              CALL_SHOW(mcColumns)));
 
@@ -1047,6 +1069,7 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
 
     // Abbreviation
     TelegramComms * tc = TelegramComms::Instance();
+    const QString is_silent = tc -> GetPreferenceValue(mcUserID, "silent");
 
     // Resolution
     const int width = dim_frame_w
@@ -1069,7 +1092,10 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
     QString message = tr("Fitting %1x%2 stickers on the contact sheet.")
         .arg(QString::number(mcColumns),
              QString::number(mcRows));
-    tc -> SendMessage(mcChatID, message);
+    if (is_silent == "no")
+    {
+        tc -> SendMessage(mcChatID, message);
+    }
 
     // Loop all available sticker sets
     const QStringList all_set_names = tc -> GetAllStickerSetNames();
@@ -1169,7 +1195,10 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
         message += tr(" %1 sets with animated stickers were ignored.")
             .arg(QString::number(num_animated));
     }
-    tc -> SendMessage(mcChatID, message);
+    if (is_silent == "no")
+    {
+        tc -> SendMessage(mcChatID, message);
+    }
 
     // Check if there is current work going on
     if (m_ShuttingDown &&
@@ -1186,18 +1215,23 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcChatID,
 
 ///////////////////////////////////////////////////////////////////////////////
 // Contact sheet: single set
-void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
-    const QString & mcrStickerSetName, const int mcRows, const int mcColumns)
+void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcUserID,
+    const qint64 mcChatID, const QString & mcrStickerSetName, const int mcRows,
+    const int mcColumns)
 {
-    CALL_IN(QString("mcChatID=%1, mcrStickerSetName=%2, mcRows=%3, "
-        "mcColumns=%4")
-        .arg(CALL_SHOW(mcChatID),
+    CALL_IN(QString("mcUserID=%1, mcChatID=%2, mcrStickerSetName=%3, "
+        "mcRows=%4, mcColumns=%5")
+        .arg(CALL_SHOW(mcUserID),
+             CALL_SHOW(mcChatID),
              CALL_SHOW(mcrStickerSetName),
              CALL_SHOW(mcRows),
              CALL_SHOW(mcColumns)));
 
-    // Check if the set exists
+    // Abbreviation
     TelegramComms * tc = TelegramComms::Instance();
+    const QString is_silent = tc -> GetPreferenceValue(mcUserID, "silent");
+
+    // Check if the set exists
     if (!tc -> DoesStickerSetInfoExist(mcrStickerSetName))
     {
         const QString message = tr("I don't know sticker set %1.")
@@ -1270,7 +1304,10 @@ void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
     QString message = tr("Fitting %1x%2 stickers on the contact sheet.")
         .arg(QString::number(mcColumns),
              QString::number(mcRows));
-    tc -> SendMessage(mcChatID, message);
+    if (is_silent == "no")
+    {
+        tc -> SendMessage(mcChatID, message);
+    }
 
     // Title font
     QFont title_font("Georgia", 70);
@@ -1352,7 +1389,10 @@ void MainWindow::Command_ContactSheets_SingleSet(const qint64 mcChatID,
              mcrStickerSetName,
              QString::number(all_file_ids.size()),
              all_file_ids.size() == 1 ? tr("sticker") : tr("stickers"));
-    tc -> SendMessage(mcChatID, message);
+    if (is_silent == "no")
+    {
+        tc -> SendMessage(mcChatID, message);
+    }
 
     // Check if there is current work going on
     if (m_ShuttingDown &&
@@ -1392,10 +1432,11 @@ void MainWindow::Command_Set(const qint64 mcUserID, const qint64 mcChatID,
         QString message = tr("Preferences:\n");
         for (const QString & key : sorted_keys)
         {
-            message += QString("%1: %2")
+            message += QString("%1: %2\n")
                 .arg(key,
                      prefs[key]);
         }
+        message = message.trimmed();
         tc -> SendMessage(mcChatID, message);
         CALL_OUT("");
         return;
@@ -1448,6 +1489,28 @@ void MainWindow::Command_Set(const qint64 mcUserID, const qint64 mcChatID,
         {
             const QString reason = tr("%1 should have one of the following "
                 "values: \"always\", \"never\", \"once\".")
+                .arg(key);
+            tc -> SendMessage(mcChatID, reason);
+        } else
+        {
+            tc -> SetPreferenceValue(mcUserID, key, value);
+            const QString reason = tr("%1 set to \"%2\".")
+                .arg(key,
+                     value);
+            tc -> SendMessage(mcChatID, reason);
+        }
+        CALL_OUT("");
+        return;
+    }
+
+    // silent
+    if (key == "silent")
+    {
+        if (value != "yes" &&
+            value != "no")
+        {
+            const QString reason = tr("%1 should have one of the following "
+                "values: \"yes\", \"no\".")
                 .arg(key);
             tc -> SendMessage(mcChatID, reason);
         } else
@@ -1546,8 +1609,10 @@ void MainWindow::StickerSetInfoReceived(const QString & mcrStickerSetName)
         return;
     }
 
-    // Get info
+    // Abbreviation
     TelegramComms * tc = TelegramComms::Instance();
+
+    // Get info
     const QHash < QString, QString > info =
         tc -> GetStickerSetInfo(mcrStickerSetName);
     QString title = info["title"];
@@ -1560,14 +1625,19 @@ void MainWindow::StickerSetInfoReceived(const QString & mcrStickerSetName)
     const QString message = tr("Sticker set %1 has %2 stickers.")
         .arg(title,
              QString::number(sticker_ids.size()));
-    for (auto chat_iterator =
-            m_StickerSetNameToChatIDs[mcrStickerSetName].constBegin();
-        chat_iterator !=
-            m_StickerSetNameToChatIDs[mcrStickerSetName].constEnd();
-        chat_iterator++)
+    for (int index = 0;
+         index < m_StickerSetNameToChatIDs[mcrStickerSetName].size();
+         index++)
     {
-        const qint64 chat_id = *chat_iterator;
-        tc -> SendMessage(chat_id, message);
+        const qint64 chat_id =
+            m_StickerSetNameToChatIDs[mcrStickerSetName][index];
+        const qint64 user_id =
+            m_StickerSetNameToUserIDs[mcrStickerSetName][index];
+        const QString is_silent = tc -> GetPreferenceValue(user_id, "silent");
+        if (is_silent == "no")
+        {
+            tc -> SendMessage(chat_id, message);
+        }
     }
 
     CALL_OUT("");
