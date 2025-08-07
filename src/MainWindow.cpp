@@ -396,6 +396,14 @@ void MainWindow::MessageReceived(const qint64 mcChatID, qint64 mcMessageID)
         } else if (message_info.contains("forward_sender_name"))
         {
             forward_user = message_info["forward_sender_name"];
+        } else if (message_info.contains("forward_from_chat_id"))
+        {
+            // Forwarded from a channel
+            const qint64 forward_chat_id =
+                message_info["forward_from_chat_id"].toLongLong();
+            const QHash < QString, QString > forward_chat_info =
+                tc -> GetChatInfo(forward_chat_id);
+            forward_user = forward_chat_info["title"];
         } else
         {
             // Problem
@@ -1097,8 +1105,16 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcUserID,
         tc -> SendMessage(mcChatID, message);
     }
 
-    // Loop all available sticker sets
+    // Sort sticker sets
     const QStringList all_set_names = tc -> GetAllStickerSetNames();
+    QHash < QString, QString > sort_hash;
+    for (const QString & set_name : all_set_names)
+    {
+        sort_hash[set_name] = set_name.toLower();
+    }
+    const QStringList sorted_names = StringHelper::SortHash(sort_hash);
+
+    // Loop all available sticker sets
     int row = 0;
     int column = 0;
     int sheet_count = 1;
@@ -1107,7 +1123,7 @@ void MainWindow::Command_ContactSheets_AllSets(const qint64 mcUserID,
     QPixmap sheet = QPixmap(width, height);
     QPainter * painter = new QPainter(&sheet);
     painter -> fillRect(0, 0, width, height, Qt::white);
-    for (const QString & set_name : all_set_names)
+    for (const QString & set_name : sorted_names)
     {
         if (!tc -> DoesStickerSetInfoExist(set_name))
         {

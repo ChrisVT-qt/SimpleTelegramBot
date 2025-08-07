@@ -3483,18 +3483,10 @@ QStringList TelegramComms::GetAllStickerSetNames() const
 {
     CALL_IN("");
 
-    QHash < QString, QString > sort_hash;
-    for (auto name_iterator = m_StickerSetNameToInfo.keyBegin();
-         name_iterator != m_StickerSetNameToInfo.keyEnd();
-         name_iterator++)
-    {
-        const QString set_name = *name_iterator;
-        sort_hash[set_name] = set_name.toLower();
-    }
-    const QStringList sorted_names = StringHelper::SortHash(sort_hash);
+    // Nothing to do.
 
     CALL_OUT("");
-    return sorted_names;
+    return m_StickerSetNameToInfo.keys();
 }
 
 
